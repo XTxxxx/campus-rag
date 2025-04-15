@@ -23,4 +23,5 @@ dependencies = [
   "langchain",
   "langchain-openai",
   "FlagEmbedding>=1.3.3",
+  "fastapi[standard]"
 ]

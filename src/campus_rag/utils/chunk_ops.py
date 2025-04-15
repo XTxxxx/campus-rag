@@ -14,14 +14,17 @@ class Chunk(TypedDict):
   sparse_embedding: list[float]
 
 
+def get_chunk(chunk: Chunk) -> str:
+  if "cleaned_chunk" in chunk and chunk["cleaned_chunk"]:
+    return chunk["cleaned_chunk"]
+  return chunk["chunk"]
+
+
 def construct_embedding_key(chunk: Chunk) -> str:
   """
   Construct a unique key for the chunk based on its content.
   """
-  if "cleaned_chunk" in chunk and chunk["cleaned_chunk"]:
-    cur_chunk = chunk["cleaned_chunk"]
-  else:
-    cur_chunk = chunk["chunk"]
+  cur_chunk = get_chunk(chunk)
   context = chunk["context"]
   if isinstance(context, str):
     context_str = context

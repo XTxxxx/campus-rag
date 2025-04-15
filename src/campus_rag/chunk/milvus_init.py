@@ -9,11 +9,13 @@ Usage:
 - To create a collection and insert data:
   `python milvus_init.py all`
 
-TODO: add more collections(maybe not necessary), insert real data crawled from the nju website
+TODO: add more collections(maybe not necessary), insert real data crawled from the nju websites
 """
 
 from src.campus_rag.utils.chunk_ops import construct_embedding_key
 from src.campus_rag.utils.logging_config import configure_logger
+from sentence_transformers import SentenceTransformer  # noqa
+from milvus_model.hybrid import BGEM3EmbeddingFunction  # noqa
 
 import typer
 import os
@@ -26,17 +28,12 @@ app = typer.Typer()
 logger = configure_logger("info")
 
 
-from sentence_transformers import SentenceTransformer  # noqa
-from milvus_model.hybrid import BGEM3EmbeddingFunction  # noqa
-
-
-
-_COLLECTION_NAME = "example"
+COLLECTION_NAME = "example"
+MILVUS_URI = "http://localhost:19530"
 _MAX_LENGTH = 65535
-_MILVUS_URI = "http://localhost:19530"
 logger.info("Loading embedding model...")
-_embedding_model = SentenceTransformer("intfloat/multilingual-e5-large")
-_sparse_embedding_model = BGEM3EmbeddingFunction(device="cuda:0")
+embedding_model = SentenceTransformer("intfloat/multilingual-e5-large")
+sparse_embedding_model = BGEM3EmbeddingFunction(device="cuda:0")
 logger.info("Embedding model loaded successfully.")
 _DATA_ROOT = "./data"
 
@@ -45,9 +42,9 @@ def create_collections(mc: MilvusClient):
   """
   Drop the collection if it exists and create a new one.
   """
-  if mc.has_collection(_COLLECTION_NAME):
-    mc.drop_collection(_COLLECTION_NAME)
-    logger.info(f"Successfully dropped collection {_COLLECTION_NAME}")
+  if mc.has_collection(COLLECTION_NAME):
+    mc.drop_collection(COLLECTION_NAME)
+    logger.info(f"Successfully dropped collection {COLLECTION_NAME}")
   schema = MilvusClient.create_schema(
     auto_id=True,
     enable_dynamic_field=True,
@@ -56,7 +53,7 @@ def create_collections(mc: MilvusClient):
   schema.add_field(
     "embedding",
     DataType.FLOAT_VECTOR,
-    dim=_embedding_model.get_sentence_embedding_dimension(),
+    dim=embedding_model.get_sentence_embedding_dimension(),
   )
   # Refer to https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/rag/rag-enrichment-phase for details
   # sparse embedding: sparse vector used for keyword search
@@ -78,9 +75,9 @@ def create_collections(mc: MilvusClient):
   )
 
   mc.create_collection(
-    collection_name=_COLLECTION_NAME, schema=schema, index_params=index_params
+    collection_name=COLLECTION_NAME, schema=schema, index_params=index_params
   )
-  logger.info(f"Successfully created collection {_COLLECTION_NAME}")
+  logger.info(f"Successfully created collection {COLLECTION_NAME}")
 
 
 def insert_data(mc: MilvusClient):
@@ -90,7 +87,7 @@ def insert_data(mc: MilvusClient):
 
 @app.command()
 def all():
-  mc = MilvusClient(uri=_MILVUS_URI)
+  mc = MilvusClient(uri=MILVUS_URI)
   create_collections(mc)
   insert_data(mc)
 
@@ -98,7 +95,7 @@ def all():
 @app.command()
 def example():
   logger.info("Inserting example data into Milvus")
-  mc = MilvusClient(uri=_MILVUS_URI)
+  mc = MilvusClient(uri=MILVUS_URI)
   create_collections(mc)
   example_path = os.path.join(_DATA_ROOT, "example.json")
   with open(example_path, "r", encoding="utf-8") as f:
@@ -106,10 +103,10 @@ def example():
   for chunk in tqdm(data):
     embedding_key = construct_embedding_key(chunk)
     mc.insert(
-      collection_name=_COLLECTION_NAME,
+      collection_name=COLLECTION_NAME,
       data={
-        "embedding": _embedding_model.encode(embedding_key),
-        "sparse_embedding": _sparse_embedding_model([embedding_key])["sparse"],
+        "embedding": embedding_model.encode(embedding_key),
+        "sparse_embedding": sparse_embedding_model([embedding_key])["sparse"],
         "source": chunk["source"],
         "context": " ".join(chunk["context"]),
         "cleaned_chunk": chunk["cleaned_chunk"],
