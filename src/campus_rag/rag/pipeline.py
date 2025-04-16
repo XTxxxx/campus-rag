@@ -10,6 +10,7 @@ from src.campus_rag.chunk.milvus_init import (
   MILVUS_URI,
 )
 import asyncio
+import src.campus_rag.conversation as cm
 
 _KEYWORDS_PATH = "./data/keywords.json"
 
@@ -25,7 +26,7 @@ class RAGPipeline:
     self.limit = 25
     self.top_k = 5
 
-  async def start(self, query: str) -> AsyncGenerator:
+  async def start(self, query: str, history: list[cm.ChatMessage]) -> AsyncGenerator:
     # Enhance the query
     yield f"status: Enhancing query...{query}\n"
     enhanced_query = self.enhance_query(query, _KEYWORDS_PATH)
@@ -43,17 +44,22 @@ class RAGPipeline:
     yield "status: Reranking done, generating answer...\n"
     # Generate the answer
     yield "answer: \n"
+    answer = ""
     for res in self.generator(
       query=query,
       chunks=[get_chunk(res["entity"]) for res in results[: self.top_k]],
+      history=history,
     ):
-      yield res.choices[0].delta.content
+      cur_token = res.choices[0].delta.content
+      yield cur_token
+      answer += cur_token
+    yield f"final answer:\n{answer}\n"
 
 
 async def main():
   pipeline = RAGPipeline()
   query = "南哪是985吗"
-  async for answer in pipeline.start(query):
+  async for answer in pipeline.start(query, []):
     print(answer)
 
 
