@@ -81,8 +81,29 @@ def create_collections(mc: MilvusClient):
 
 
 def insert_data(mc: MilvusClient):
-  # TODO: insert data (from ./data) into Milvus
-  pass
+  """
+  Insert data into the collection.
+  """
+  datas = ["nju_se_teacher.json", "red_and_black_table.json"]
+  logger.info("Inserting data into Milvus")
+  for data in datas:
+    data_path = os.path.join(_DATA_ROOT, data)
+    with open(data_path, "r", encoding="utf-8") as f:
+      data = json.load(f)
+    for chunk in tqdm(data):
+      embedding_key = construct_embedding_key(chunk)
+      mc.insert(
+        collection_name=COLLECTION_NAME,
+        data={
+          "embedding": embedding_model.encode(embedding_key),
+          "sparse_embedding": sparse_embedding_model([embedding_key])["sparse"],
+          "source": chunk["source"],
+          "context": " ".join(chunk["context"]),
+          "cleaned_chunk": chunk["cleaned_chunk"],
+          "chunk": chunk["chunk"],
+        },
+      )
+  logger.info("Successfully inserted data into Milvus")
 
 
 @app.command()
