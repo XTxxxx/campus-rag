@@ -1,9 +1,8 @@
 import pandas as pd
 import json
-import spacy
+from keybert import KeyBERT
 
-# 加载 spaCy 模型
-nlp = spacy.load('zh_core_web_sm')
+kw_model = KeyBERT(model="paraphrase-multilingual-MiniLM-L12-v2")
 
 # 读取 Excel 文件
 excel_file = r'D:\下载\红黑榜_2024冬.xlsx'
@@ -14,10 +13,11 @@ df = df.fillna('')
 # 定义存储合并后的 JSON 对象的字典
 merged_data = {}
 
+index = 1
 # 遍历每一行
 for _, row in df.iterrows():
     # 提取关键词
-    if (not row.iloc[3] == ' ') and not row.iloc[0] and not row.iloc[1] and not row.iloc[2]:
+    if (not row.iloc[3] == "") and not row.iloc[0] and not row.iloc[1] and not row.iloc[2]:
         continue  # 跳过该行
     title1 = row.iloc[0]
     title2 = row.iloc[2]  # 去除两端空格
@@ -31,9 +31,12 @@ for _, row in df.iterrows():
     if chunk == "":
         continue
 
-    # 使用 spaCy 提取关键词
-    doc = nlp(chunk)
-    keywords = [token.text for token in doc if token.is_alpha and not token.is_stop]  # 仅提取非停用词的词
+    chunk = ' '.join(str(value) for value in row[1:] if value)
+    # 使用 KeyBERT 提取关键词
+    keywords = kw_model.extract_keywords(chunk, keyphrase_ngram_range=(1, 2),use_mmr=False,stop_words=None,diversity=0.7,top_n=3)
+    index+=1
+    print(index)
+    keywords = [kw[0] for kw in keywords]  # 只提取关键词，忽略置信度
 
     # 构建 JSON 对象
     json_obj = {
