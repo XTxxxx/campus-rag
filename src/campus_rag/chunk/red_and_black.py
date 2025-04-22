@@ -26,7 +26,7 @@ for _, row in df.iterrows():
     keywords = (keyword1, keyword3)
 
     # 从第四列开始，拼接不为空的列
-    chunk = ' '.join(str(value) for value in row[3:] if value)  # 去掉空值
+    chunk = ' '.join(str(value) for value in row[0:] if value)  # 去掉空值
 
     # 构建 JSON 对象
     json_obj = {

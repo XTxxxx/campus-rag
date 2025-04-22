@@ -28,7 +28,6 @@ for i in range(1, len(chunks), 2):
     else:
         title = ''
 
-    # 使用 KeyBERT 提取关键词，允许提取最多两个词的关键词
     keywords = kw_model.extract_keywords(content_part, stop_words='english', top_n=5, use_mmr=True)
 
     # 提取关键词列表，包含单词和词组
