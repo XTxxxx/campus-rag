@@ -63,8 +63,6 @@ def create_collections(mc: MilvusClient):
   schema.add_field("chunk", DataType.VARCHAR, max_length=_MAX_LENGTH)
   schema.add_field("cleaned_chunk", DataType.VARCHAR, max_length=_MAX_LENGTH)
   schema.add_field("context", DataType.VARCHAR, max_length=_MAX_LENGTH)
-  schema.add_field("title", DataType.VARCHAR, max_length=_MAX_LENGTH)
-  schema.add_field("keywords", DataType.VARCHAR, max_length=_MAX_LENGTH)
 
   # create indexes
   index_params = mc.prepare_index_params()
@@ -86,7 +84,7 @@ def insert_data(mc: MilvusClient):
   """
   Insert data into the collection.
   """
-  datas = ["nju_se_teacher.json", "red_and_black_table.json","student_manual.json","course.json","organization.json","news_for_software.json"]
+  datas = ["nju_se_teacher.json", "red_and_black_table.json"]
   logger.info("Inserting data into Milvus")
   for data in datas:
     data_path = os.path.join(_DATA_ROOT, data)
@@ -103,8 +101,6 @@ def insert_data(mc: MilvusClient):
           "context": " ".join(chunk["context"]),
           "cleaned_chunk": chunk["cleaned_chunk"],
           "chunk": chunk["chunk"],
-          "keywords": chunk["keywords"],
-          "title": chunk["title"]
         },
       )
   logger.info("Successfully inserted data into Milvus")

@@ -69,7 +69,8 @@ class InmemConversationManager:
   def create_user(self, user_id: str) -> User:
     for u in users:
       if u.user_id == user_id:
-        raise HTTPException(status_code=402, detail="User already exist")
+        # see http://172.29.4.49/2025seiii-020-team_nailong/rag/-/issues/2
+        return u  
     new_user = User(
       user_id=user_id,
       create_time=time.time(),
