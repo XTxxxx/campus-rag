@@ -81,11 +81,9 @@ class HybridRetriever:
       "do_title_filter": False,
     }
 
-  def retrieve(self, question, limit=25, sources=None, col=COLLECTION_NAME):
+  async def retrieve(self, question, limit=25, sources=None, col=COLLECTION_NAME):
     # Search with filters
-    hybrid_results = self.hybrid_search(
-      col, question, sources, limit, self.config
-    )
+    hybrid_results = self.hybrid_search(col, question, sources, limit, self.config)
     # If no results found, search without filters
     if len(hybrid_results) == 0:
       hybrid_results = self.hybrid_search(

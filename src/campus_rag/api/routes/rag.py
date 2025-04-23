@@ -22,6 +22,8 @@ async def run_pipeline_and_queue_results(task_id: str, query: str, history: list
   try:
     async for chunk in rag_pipeline.start(query, history):
       await tasks[task_id]["queue"].put(chunk)
+      # Explicitly yield control to the event loop
+      await asyncio.sleep(0)
       if chunk.startswith("final answer:"):
         final_answer = chunk.split("final answer:")[-1].strip()
         # Store final answer for potential later retrieval if needed
@@ -102,10 +104,11 @@ async def stream_rag_pipeline_results(task_id: str) -> StreamingResponse:
           elif task_info["status"] == "error":
             # Optionally yield an error message to the client
             yield f"data: Error: {task_info.get('error_message', 'Unknown error')}\n\n"
+          yield "data: [DONE]\n\n"
           break
-        yield chunk
-        # Ensure the queue consumer doesn't hog the event loop
-        await asyncio.sleep(0.01)
+        if chunk.startswith("final answer:"):
+          continue
+        yield f"data: {chunk}\n\n"
     except asyncio.CancelledError:
       # Handle client disconnect if necessary
       print(f"Client disconnected for task {task_id}")

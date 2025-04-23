@@ -29,21 +29,21 @@ class RAGPipeline:
   async def start(self, query: str, history: list[cm.ChatMessage]) -> AsyncGenerator:
     # Enhance the query
     yield f"status: Enhancing query...{query}\n"
-    enhanced_query = self.enhance_query(query, _KEYWORDS_PATH)
+    enhanced_query = await self.enhance_query(query, _KEYWORDS_PATH)
     yield f"status: Enhancing query done, retrieving chunks...{enhanced_query}\n"
     # Retrieve the results
-    results = self.hybrid_retriever.retrieve(
+    results = await self.hybrid_retriever.retrieve(
       question=enhanced_query,
     )
-    yield f"status: Retrieving results done, reranking...Got {len(results)} results.\n"
+    yield f"status: Retrieving results done, reranking...Got {len(results)} results.\\n"
     # Rerank
     results = self.reranker.rerank(
       query=enhanced_query,
       results=results,
     )
-    yield "status: Reranking done, generating answer...\n"
+    yield "status: Reranking done, generating answer...\\n"
     # Generate the answer
-    yield "answer: \n"
+    yield "answer: \\n"
     answer = ""
     for res in self.generator(
       query=query,
@@ -51,9 +51,11 @@ class RAGPipeline:
       history=history,
     ):
       cur_token = res.choices[0].delta.content
+      # Replace \n with \\n
+      cur_token = cur_token.replace("\n", "\\n")
       yield cur_token
       answer += cur_token
-    yield f"final answer:\n{answer}\n"
+    yield f"final answer:{answer}"
 
 
 async def main():

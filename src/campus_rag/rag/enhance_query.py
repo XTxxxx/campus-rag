@@ -18,7 +18,7 @@ def _construct_keyword_explanation(keyword_path: str) -> str:
   )
 
 
-def enhance_query(query: str, keyword_path: str) -> str:
+async def enhance_query(query: str, keyword_path: str) -> str:
   """
   Enhance the query using keywords from a file.
   :param query: The original query.

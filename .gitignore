@@ -3,4 +3,4 @@ campus_rag.egg-info/
 .venv/
 **/build/
 /src/campus_rag/chunk/course.CSV
-.idea
+.idea/

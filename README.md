@@ -3,9 +3,10 @@
 > 校园信息RAG应用
 
 - 我们的侧重点
-  - [ ] 老师的相关信息
+  - [x] 老师的相关信息
+  - [x] 课表
   - [ ] 红黑榜
-  - [ ] ...
+  - [ ] 学生手册
 
 -  Develop
    - Activate a venv `python3.10 venv .venv ; source .venv/bin/activate`
