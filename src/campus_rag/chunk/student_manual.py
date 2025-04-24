@@ -37,12 +37,13 @@ for i in range(1, len(chunks), 2):
     keywords_list = [kw for kw in keywords_list if len(kw.split()) <= 2]  # 仅保留最多有两个词的关键词
 
     json_obj = {
+        "source":"",
         "chunk": content_part,
-        "title": title,
-        "keywords": keywords_list,  # 添加提取的关键词
+        "cleaned_chunk": title,
+        "context": keywords_list,  # 添加提取的关键词
     }
     result.append(json_obj)
 
 # 将结果写入JSON文件
-with open('output.json', 'w', encoding='utf-8') as file:
+with open(r'D:\codesforpython\rag\data\student_manual.json', 'w', encoding='utf-8') as file:
     json.dump(result, file, ensure_ascii=False, indent=4)

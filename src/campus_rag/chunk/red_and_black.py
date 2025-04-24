@@ -18,12 +18,8 @@ for _, row in df.iterrows():
     keyword1 = row.iloc[0].strip()  # 去除两端空格
     keyword3 = row.iloc[2].strip()  # 去除两端空格
 
-    # 检查是否符合合并条件
-    if not row.iloc[3] and not keyword1 and not keyword3:
-        continue  # 跳过该行
-
     # 构建关键词元组
-    keywords = (keyword1, keyword3)
+    keywords = keyword1 + " " + keyword3
 
     # 从第四列开始，拼接不为空的列
     chunk = ' '.join(str(value) for value in row[0:] if value)  # 去掉空值
@@ -32,9 +28,8 @@ for _, row in df.iterrows():
     json_obj = {
         "source": source,
         "chunk": chunk.strip(),  # 去除两端空格
-        "cleaned_chunk": "",  # 可以在后面增加清洗逻辑
+        "cleaned_chunk": keywords,  # 可以在后面增加清洗逻辑
         "context": [],
-        "keywords": list(keywords)  # 将 keywords 转为列表
     }
 
     # 合并相同关键词的 JSON 对象
