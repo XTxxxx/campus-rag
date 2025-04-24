@@ -1,3 +1,5 @@
+from distutils.command.clean import clean
+
 import pandas as pd
 import json
 
@@ -16,10 +18,20 @@ source = "https://table.nju.edu.cn/external-apps/7aded834-74a2-43cc-b515-fb8e016
 for _, row in df.iterrows():
     # 提取关键词
     keyword1 = row.iloc[0].strip()  # 去除两端空格
+    keyword2 = row.iloc[1].strip()
     keyword3 = row.iloc[2].strip()  # 去除两端空格
+
 
     # 构建关键词元组
     keywords = keyword1 + " " + keyword3
+
+    if row.iloc[4].strip()=='':
+        continue
+
+    if keyword2!='':
+        cleaned_chunk = keyword2 + " " + keyword3
+    else  :
+        cleaned_chunk = keyword1 + " " + keyword3
 
     # 从第四列开始，拼接不为空的列
     chunk = ' '.join(str(value) for value in row[0:] if value)  # 去掉空值
@@ -28,7 +40,7 @@ for _, row in df.iterrows():
     json_obj = {
         "source": source,
         "chunk": chunk.strip(),  # 去除两端空格
-        "cleaned_chunk": keywords,  # 可以在后面增加清洗逻辑
+        "cleaned_chunk": cleaned_chunk,  # 可以在后面增加清洗逻辑
         "context": [],
     }
 
