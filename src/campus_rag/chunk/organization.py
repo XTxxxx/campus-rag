@@ -14,7 +14,7 @@ for index, row in df.iterrows():
         title = row.iloc[0]  # 使用 iloc 访问第一个元素
         # Convert each item to a string before joining
         data = " ".join(str(item) for item in row.iloc[1:])  # 其余的列转为字符串并连接
-        json_object = {'title': title, 'chunk': data}
+        json_object = {'cleaned_chunk': title, 'chunk': data,'source':"",'context':[]}
         json_list.append(json_object)
 
 # 将列表转换为 JSON 字符串

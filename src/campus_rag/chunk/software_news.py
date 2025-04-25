@@ -24,16 +24,14 @@ def process_data(chunks):
         # 修复chunk，将\n替换为" "
         item['chunk'] = item['chunk'].replace('\n', ' ').strip()
 
-        # 删除cleaned_chunk和context字段
-        if 'cleaned_chunk' in item:
-            del item['cleaned_chunk']
-        if 'context' in item:
-            del item['context']
+        if 'keywords' in item:
+            del item['keywords']
 
         # 生成关键词，以人物为主，限制为5个
         keywords = kw_model.extract_keywords(item['chunk'], stop_words='english', top_n=5)
         print(keywords)
-        item['keywords'] = [keyword[0] for keyword in keywords if isinstance(keyword[0], str)]
+        item['cleaned_chunk'] = [keyword[0] for keyword in keywords if isinstance(keyword[0], str)]
+        item['context'] = ['']
 
     return chunks
 
