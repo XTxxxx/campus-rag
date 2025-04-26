@@ -1,10 +1,15 @@
 import asyncio
+from curses import meta
 import uuid
 from typing import AsyncGenerator, Dict, Any
 import logging
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
-from src.campus_rag.rag.pipeline import RAGPipeline, _FINAL_ANSWER_PREFIX
+from src.campus_rag.rag.pipeline import (
+  _ANSWER_PREFIX,
+  RAGPipeline,
+  _FINAL_ANSWER_PREFIX,
+)
 
 import src.campus_rag.conversation as conv_service
 
@@ -18,10 +23,18 @@ tasks: Dict[str, Dict[str, Any]] = {}
 logger = logging.getLogger(__name__)
 
 
+def extract_final_answer(metainfo: str) -> str:
+  """
+  Extracts the final answer from the metainfo string.
+  """
+  # Assuming the final answer is the last part of the metainfo
+  return metainfo.split(_ANSWER_PREFIX)[-1].strip().strip("\\n").strip()
+
+
 async def run_pipeline_and_queue_results(task_id: str, query: str, history: list):
   """Runs the RAG pipeline and puts results into the task's queue."""
   rag_pipeline = RAGPipeline()
-  final_answer_stored = False
+  metainfo_stored = False
   try:
     async for chunk in rag_pipeline.start(query, history):
       logger.info(f"Chunk received: {chunk}")
@@ -31,14 +44,15 @@ async def run_pipeline_and_queue_results(task_id: str, query: str, history: list
       if chunk.startswith(_FINAL_ANSWER_PREFIX):
         final_answer = chunk.split(_FINAL_ANSWER_PREFIX)[-1].strip()
         # Store final answer for potential later retrieval if needed
-        tasks[task_id]["final_answer"] = final_answer
+        tasks[task_id]["metainfo"] = final_answer
+        tasks[task_id]["final_answer"] = extract_final_answer(final_answer)
         # Mark final answer stored to avoid double storing if stream ends abruptly
-        final_answer_stored = True
+        metainfo_stored = True
         # Signal completion by putting a special marker or None
         await tasks[task_id]["queue"].put(None)
         break  # Stop processing after final answer
     # If the loop finishes without finding "final answer:", signal completion
-    if not final_answer_stored:
+    if not metainfo_stored:
       await tasks[task_id]["queue"].put(None)
     tasks[task_id]["status"] = "completed"
   except Exception as e:
@@ -70,6 +84,7 @@ async def start_rag_pipeline_task(
     "queue": result_queue,
     "status": "running",
     "final_answer": None,
+    "metainfo": None,
     "error_message": None,
     "user_id": query.user_id,  # Store context for adding assistant message later
     "conversation_id": query.conversation_id,
@@ -105,6 +120,7 @@ async def stream_rag_pipeline_results(task_id: str) -> StreamingResponse:
               task_info["conversation_id"],
               "assistant",
               task_info["final_answer"],
+              metainfo=task_info["metainfo"],
             )
           elif task_info["status"] == "error":
             # Optionally yield an error message to the client

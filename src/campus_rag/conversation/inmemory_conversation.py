@@ -13,7 +13,7 @@ class ChatMessage(BaseModel):
   role: Literal["user", "assistant"]
   content: str
   create_time: float
-  sources: Optional[list[dict[str, str]]] = None
+  metainfo: Optional[str] = None
 
 
 class Conversation(BaseModel):
@@ -27,9 +27,11 @@ class Conversation(BaseModel):
     self.messages.append(message)
     self.update_time = time.time()
 
+
 class ConversationView(BaseModel):
   conversation_id: UUID4
   title: Optional[str] = None
+
 
 class User(BaseModel):
   user_id: str
@@ -97,7 +99,10 @@ class InmemConversationManager:
           u.conversations, key=self.sorted_methods[sorted_by]
         )
         selected_conversations = sorted_conversations[first_id : first_id + limit]
-        return [ConversationView(conversation_id=conv.conversation_id, title=conv.title) for conv in selected_conversations]
+        return [
+          ConversationView(conversation_id=conv.conversation_id, title=conv.title)
+          for conv in selected_conversations
+        ]
     raise HTTPException(status_code=404, detail="User not found")
 
   def get_chat_history(self, user_id: str, conversation_id: UUID4) -> list[ChatMessage]:
@@ -152,7 +157,14 @@ class InmemConversationManager:
       # If title extraction fails, use a fallback
       return content[:20] + "..." if len(content) > 20 else content
 
-  def add_message(self, user_id: str, conversation_id: UUID4, role: str, content: str):
+  def add_message(
+    self,
+    user_id: str,
+    conversation_id: UUID4,
+    role: str,
+    content: str,
+    metainfo: Optional[str] = None,
+  ):
     conversation = self.get_converstaion_by_id(user_id, conversation_id)
 
     message = ChatMessage(
@@ -161,6 +173,7 @@ class InmemConversationManager:
       role=role,
       content=content,
       create_time=time.time(),
+      metainfo=metainfo,
     )
     conversation.append_message(message)
 
