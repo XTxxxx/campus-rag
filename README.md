@@ -23,6 +23,6 @@
   -e HTTP_PROXY = 'desensitized'
   -e HTTPS_PROXY = 'desensitized'
   --gpus all  \
-  whaledge-backend:latest \
-  --restart unless-stopped
+  --restart unless-stopped \
+  whaledge-backend:latest
   ```

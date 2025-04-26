@@ -16,6 +16,7 @@ RUN mkdir -p src
 
 RUN uv sync --locked
 
+COPY data ./data
 COPY src ./src
 
 
@@ -29,4 +30,4 @@ COPY --from=builder /root/.local /root/.local
 
 ENV PATH="/root/.local/bin:$PATH"
 
-CMD ["uv", "run", "uvicorn", "src.campus_rag.api.main:app", "--port", "8000", "--host", "0.0.0.0"]
+CMD ["uv", "run", "fastapi", "run", "src/campus_rag/api/main.py", "--port", "8000", "--host", "0.0.0.0"]
