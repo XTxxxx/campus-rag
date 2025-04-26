@@ -10,7 +10,7 @@ include-package-data = false
 name = "campus_rag"
 version = "0.1"
 description = "Campus information RAG in NJU"
-requires-python = "==3.10"
+requires-python = "==3.10.*"
 dependencies = [
   "typer",
   "tqdm",

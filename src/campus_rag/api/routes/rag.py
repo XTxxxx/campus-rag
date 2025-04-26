@@ -3,7 +3,7 @@ import uuid
 from typing import AsyncGenerator, Dict, Any
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
-from src.campus_rag.rag.pipeline import RAGPipeline
+from src.campus_rag.rag.pipeline import RAGPipeline, _FINAL_ANSWER_PREFIX
 
 import src.campus_rag.conversation as conv_service
 
@@ -24,8 +24,8 @@ async def run_pipeline_and_queue_results(task_id: str, query: str, history: list
       await tasks[task_id]["queue"].put(chunk)
       # Explicitly yield control to the event loop
       await asyncio.sleep(0)
-      if chunk.startswith("final answer:"):
-        final_answer = chunk.split("final answer:")[-1].strip()
+      if chunk.startswith(_FINAL_ANSWER_PREFIX):
+        final_answer = chunk.split(_FINAL_ANSWER_PREFIX)[-1].strip()
         # Store final answer for potential later retrieval if needed
         tasks[task_id]["final_answer"] = final_answer
         # Mark final answer stored to avoid double storing if stream ends abruptly
@@ -106,7 +106,7 @@ async def stream_rag_pipeline_results(task_id: str) -> StreamingResponse:
             yield f"data: Error: {task_info.get('error_message', 'Unknown error')}\n\n"
           yield "data: [DONE]\n\n"
           break
-        if chunk.startswith("final answer:"):
+        if chunk.startswith(_FINAL_ANSWER_PREFIX):
           continue
         yield f"data: {chunk}\n\n"
     except asyncio.CancelledError:
