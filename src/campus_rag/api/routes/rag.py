@@ -1,6 +1,7 @@
 import asyncio
 import uuid
 from typing import AsyncGenerator, Dict, Any
+import logging
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from src.campus_rag.rag.pipeline import RAGPipeline, _FINAL_ANSWER_PREFIX
@@ -14,6 +15,8 @@ router = APIRouter()
 # Store running tasks and their queues
 tasks: Dict[str, Dict[str, Any]] = {}
 
+logger = logging.getLogger(__name__)
+
 
 async def run_pipeline_and_queue_results(task_id: str, query: str, history: list):
   """Runs the RAG pipeline and puts results into the task's queue."""
@@ -21,6 +24,7 @@ async def run_pipeline_and_queue_results(task_id: str, query: str, history: list
   final_answer_stored = False
   try:
     async for chunk in rag_pipeline.start(query, history):
+      logger.info(f"Chunk received: {chunk}")
       await tasks[task_id]["queue"].put(chunk)
       # Explicitly yield control to the event loop
       await asyncio.sleep(0)
@@ -92,6 +96,7 @@ async def stream_rag_pipeline_results(task_id: str) -> StreamingResponse:
     try:
       while True:
         chunk = await result_queue.get()
+        logger.info("---- Chunk sended!!! ----")
         if chunk is None:  # End of stream signal
           # Check if a final answer was generated and store it
           if task_info["status"] == "completed" and task_info["final_answer"]:

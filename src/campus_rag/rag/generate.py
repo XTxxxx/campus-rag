@@ -1,4 +1,4 @@
-from src.campus_rag.utils.llm import llm_chat, llm_chat_stream
+from src.campus_rag.utils.llm import llm_chat_stream
 from typing import AsyncGenerator
 from src.campus_rag.conversation import ChatMessage
 

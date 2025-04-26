@@ -1,9 +1,10 @@
 import logging
 import json
 from enum import Enum
+import time
 from pydantic import BaseModel
 from typing import List
-from src.campus_rag.utils.llm import llm_chat
+from src.campus_rag.utils.llm import llm_chat_async
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ async def reflect_query(query: str, context: List[str]) -> dict:
   :param context: List of context passages relevant to the query
   :return: A dictionary with category and explanation
   """
+  time.sleep(1)
   logger.info("Reflecting on query and context...")
 
   context_text = "\n".join([f"Passage {i + 1}: {ctx}" for i, ctx in enumerate(context)])
@@ -66,7 +68,7 @@ async def reflect_query(query: str, context: List[str]) -> dict:
         """,
   }
 
-  response = llm_chat([prompt_content])
+  response = await llm_chat_async([prompt_content])
 
   try:
     result = json.loads(response)

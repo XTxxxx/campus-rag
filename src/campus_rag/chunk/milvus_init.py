@@ -20,12 +20,14 @@ from milvus_model.hybrid import BGEM3EmbeddingFunction  # noqa
 import typer
 import os
 import json
+import logging
 
 from pymilvus import DataType, MilvusClient
 from tqdm import tqdm
 
 app = typer.Typer()
-logger = configure_logger("info")
+configure_logger("info")
+logger = logging.getLogger(__name__)
 
 
 COLLECTION_NAME = "example"

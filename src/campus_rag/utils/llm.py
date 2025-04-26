@@ -4,20 +4,23 @@ Wrapper for OpenAI API
 
 import os
 import logging
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 from typing import TypedDict, Generator
 
+_ALI_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
 logging.basicConfig(level=logging.INFO)
 _llm_name = "qwen-max-2025-01-25"
 _llm_key = os.getenv("QWEN_API_KEY")
-_llm_bare = OpenAI(
-  base_url="https://dashscope.aliyuncs.com/compatible-mode/v1", api_key=_llm_key
-)
+_llm_bare = OpenAI(base_url=_ALI_URL, api_key=_llm_key)
+
+_llm_bare_async = AsyncOpenAI(base_url=_ALI_URL, api_key=_llm_key)
+
 _llm_langchain = ChatOpenAI(
   model=_llm_name,
-  base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+  base_url=_ALI_URL,
   api_key=_llm_key,
 )
 
@@ -39,6 +42,30 @@ def llm_chat(prompts: Prompts) -> str:
         _llm_bare.chat.completions.create(
           model=_llm_name,
           messages=prompts,
+        )
+        .choices[0]
+        .message.content.strip()
+      )
+    except Exception as e:
+      logging.error(f"Errors occurred: {e}")
+      retries -= 1
+      if retries == 0:
+        raise RuntimeError(
+          f"Failed to get response from Qwen API after {retries} retries"
+        )
+
+
+async def llm_chat_async(prompts: Prompts) -> str:
+  retries = 3
+  tries = 0
+  while tries < retries:
+    try:
+      return (
+        (
+          await _llm_bare_async.chat.completions.create(
+            model=_llm_name,
+            messages=prompts,
+          )
         )
         .choices[0]
         .message.content.strip()

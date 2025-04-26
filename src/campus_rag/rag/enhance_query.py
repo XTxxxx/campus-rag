@@ -1,7 +1,7 @@
 import logging
 import json
 from functools import reduce
-from src.campus_rag.utils.llm import llm_chat
+from src.campus_rag.utils.llm import llm_chat_async
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ async def enhance_query(query: str, keyword_path: str) -> str:
     {query}
     """,
   }
-  enhanced_query = llm_chat([prompt_content])
+  enhanced_query = await llm_chat_async([prompt_content])
   logger.info("Enhanced query: %s", enhanced_query)
   return enhanced_query
   

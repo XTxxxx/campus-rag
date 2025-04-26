@@ -10,6 +10,8 @@ from src.campus_rag.chunk.milvus_init import (
   embedding_model,
   sparse_embedding_model,
 )
+from fastapi.concurrency import run_in_threadpool
+import time
 
 
 class HybridRetriever:
@@ -83,10 +85,12 @@ class HybridRetriever:
 
   async def retrieve(self, question, limit=25, sources=None, col=COLLECTION_NAME):
     # Search with filters
-    hybrid_results = self.hybrid_search(col, question, sources, limit, self.config)
+    hybrid_results = await run_in_threadpool(
+      self.hybrid_search, col, question, sources, limit, self.config
+    )
     # If no results found, search without filters
     if len(hybrid_results) == 0:
-      hybrid_results = self.hybrid_search(
-        col, question, sources, limit, self.without_filter_config
+      hybrid_results = await run_in_threadpool(
+        self.hybrid_search, col, question, sources, limit, self.without_filter_config
       )
     return hybrid_results
