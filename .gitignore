@@ -4,4 +4,3 @@ campus_rag.egg-info/
 **/build/
 /src/campus_rag/chunk/course.CSV
 .idea/
-uv.lock

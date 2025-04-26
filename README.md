@@ -13,3 +13,16 @@
    - `pip install -e .`
    - Run scripts in root directory e.g. `python src/campus_rag/chunk/milvus_init.py`
    - To start backend server, run `fastapi run src/campus_rag/api/main.py`
+
+- Deploy
+  ``` sh
+  docker run --name whaledge-backend -d  \
+  -v /home/xtx/.cache/huggingface:/root/.cache/huggingface   \
+  --network=host  \
+  -e QWEN_API_KEY=$QWEN_API_KEY  \
+  -e HTTP_PROXY = 'desensitized'
+  -e HTTPS_PROXY = 'desensitized'
+  --gpus all  \
+  whaledge-backend:latest \
+  --restart unless-stopped
+  ```
