@@ -13,7 +13,9 @@ from pydantic import BaseModel
 from typing import TypedDict, Generator
 
 _ALI_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-redis_client = redis.Redis(host="localhost", port=6379, password="123456", decode_responses=True)
+redis_client = redis.Redis(
+  host="localhost", port=6379, password="123456", decode_responses=True
+)
 
 logging.basicConfig(level=logging.DEBUG)
 _llm_name = "qwen-max-2025-01-25"
@@ -80,7 +82,7 @@ async def llm_chat_async(prompts: Prompts) -> str:
   if cached_response:
     logging.info("LLM cache hit (async)")
     return cached_response
-    
+
   retries = 3
   tries = 0
   while tries < retries:
@@ -112,13 +114,16 @@ def llm_chat_stream(prompts: Prompts) -> Generator:
 
   if cached_response:
     logging.info("LLM cache hit (stream)")
+
     # For streaming, yield the cached response as a single chunk
     class FakeStreamItem:
       def __init__(self, content):
-        self.choices = [type('obj', (object,), {
-          'delta': type('obj', (object,), {'content': content})
-        })]
-    
+        self.choices = [
+          type(
+            "obj", (object,), {"delta": type("obj", (object,), {"content": content})}
+          )
+        ]
+
     yield FakeStreamItem(cached_response)
     return
 
@@ -128,20 +133,23 @@ def llm_chat_stream(prompts: Prompts) -> Generator:
     try:
       # Create a collector for the full response
       full_response = []
-      
+
       # Get the stream
       stream = _llm_bare.chat.completions.create(
         model=_llm_name,
         messages=prompts,
         stream=True,
       )
-      
+
       # Process the stream while collecting the full response
       for chunk in stream:
-        if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content is not None:
+        if (
+          hasattr(chunk.choices[0].delta, "content")
+          and chunk.choices[0].delta.content is not None
+        ):
           full_response.append(chunk.choices[0].delta.content)
         yield chunk
-      
+
       # Cache the complete response
       complete_response = "".join(full_response).strip()
       redis_client.set(cache_key, complete_response, ex=60 * 60 * 24)  # cache for 1 day
@@ -167,7 +175,7 @@ def structure_llm_chat(prompts, model: BaseModel):
     except Exception as e:
       logging.error(f"Failed to deserialize cached structured response: {e}")
       # Continue with the API call if deserialization fails
-  
+
   llm_strcture = _llm_langchain.with_structured_output(model)
   retries = 3
   tries = 0
@@ -177,7 +185,9 @@ def structure_llm_chat(prompts, model: BaseModel):
       # Cache the structured result
       try:
         serialized_result = json.dumps(result.dict())
-        redis_client.set(cache_key, serialized_result, ex=60 * 60 * 24)  # cache for 1 day
+        redis_client.set(
+          cache_key, serialized_result, ex=60 * 60 * 24
+        )  # cache for 1 day
       except Exception as e:
         logging.error(f"Failed to cache structured response: {e}")
       return result

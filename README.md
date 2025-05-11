@@ -33,6 +33,7 @@
    - `uv sync --load`
    - Run scripts with uv e.g.     `uv run python src/campus_rag/chunk/milvus_init.py`
    - To start backend server, run `uv run uvicorn src.campus_rag.rag.api.main:app`
+   - Before commit, `uv run ruff format .`
 
 - Build
   - `docker build -t whaledge-backend:latest .`

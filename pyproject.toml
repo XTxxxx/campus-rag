@@ -6,6 +6,14 @@ build-backend = "setuptools.build_meta"
 packages = ["src"]
 include-package-data = false
 
+[tool.ruff]
+line-length = 88
+indent-width = 2
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+
 [project]
 name = "campus_rag"
 version = "0.1"
@@ -26,4 +34,5 @@ dependencies = [
   "fastapi[standard]",
   "uvicorn>=0.34.2",
   "redis>=6.0.0",
+  "ruff>=0.11.9",
 ]

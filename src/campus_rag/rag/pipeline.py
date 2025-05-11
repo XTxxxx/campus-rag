@@ -101,7 +101,9 @@ class RAGPipeline:
     if reflection_result["category"] == ReflectionCategory.IRRELEVANT.value:
       # Irrelevant question, use context free metainfo and remove the context
       extracted_topk_results = []
-    elif reflection_result["category"] == ReflectionCategory.RELEVANT_INSUFFICIENT.value:
+    elif (
+      reflection_result["category"] == ReflectionCategory.RELEVANT_INSUFFICIENT.value
+    ):
       # Relevant but insufficient question, use context free metainfo and need not generate answer
       answer_text = (
         f"{_ANSWER_PREFIX} 抱歉，根据目前检索到的信息，我回答不了这个问题！\\n"

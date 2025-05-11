@@ -11,10 +11,7 @@ def _construct_keyword_explanation(keyword_path: str) -> str:
     data = json.load(f)
   return reduce(
     lambda x, y: x + "\n" + y,
-    [
-      f"{item['keyword']} 的解释是: {item['explanation']}"
-      for item in data
-    ],
+    [f"{item['keyword']} 的解释是: {item['explanation']}" for item in data],
   )
 
 
@@ -42,7 +39,6 @@ async def enhance_query(query: str, keyword_path: str) -> str:
   enhanced_query = await llm_chat_async([prompt_content])
   logger.info("Enhanced query: %s", enhanced_query)
   return enhanced_query
-  
 
 
 if __name__ == "__main__":
