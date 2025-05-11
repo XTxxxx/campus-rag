@@ -1,0 +1,14 @@
+services:
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: redis-stack
+    ports:
+      - "6379:6379"
+      - "8001:8001"  # Redis Stack Web UI（可选）
+    volumes:
+      - ./data:/data
+    command: [
+      "redis-server", 
+      "--appendonly", "yes",
+      "--requirepass", "123456"
+    ]
