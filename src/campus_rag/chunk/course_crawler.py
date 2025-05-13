@@ -181,5 +181,42 @@ def crawle_details():
     time.sleep(0.1)
 
 
+@app.command()
+def course_clean():
+  with open(LIST_PATH, "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+  def _merge_summary(course):
+    if "course_summary" not in course or "teaching_plan" not in course:
+      return
+    if course["course_summary"] is None or course["teaching_plan"] is None:
+      return
+    summary = course["course_summary"].strip()
+    del course["course_summary"]
+    plan = course["teaching_plan"].strip()
+    del course["teaching_plan"]
+    if summary != plan:
+      summary = summary + "\n" + plan
+    course["summary"] = summary
+
+  def _trans_int(course):
+    course["hours"] = int(course["hours"])
+    if course["grade"] is not None:
+      grades = course["grade"].split(",")
+      del course["grade"]
+      course["grades"] = [int(grade) for grade in grades]
+    for time_place in course["time_place"]:
+      time_place["time"]["day_in_week"] = int(time_place["time"]["day_in_week"])
+      time_place["time"]["begin_at"] = int(time_place["time"]["begin_at"])
+      time_place["time"]["end_at"] = int(time_place["time"]["end_at"])
+
+  for course in tqdm(data):
+    _merge_summary(course)
+    _trans_int(course)
+
+  with open(LIST_PATH, "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
+
+
 if __name__ == "__main__":
   app()

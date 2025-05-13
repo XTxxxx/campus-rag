@@ -12,3 +12,4 @@ services:
       "--appendonly", "yes",
       "--requirepass", "123456"
     ]
+    restart: unless-stopped
