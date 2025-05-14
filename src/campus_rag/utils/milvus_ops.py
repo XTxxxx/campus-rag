@@ -18,7 +18,7 @@ _types = {
 }
 
 
-def _select(_type: str, kwargs: dict):
+def _select(_type: str, kwargs: dict) -> list:
   keys = kwargs.keys()
   condition = ""
   for i, key in enumerate(keys):
@@ -34,18 +34,18 @@ def _select(_type: str, kwargs: dict):
   return result
 
 
-def select_eq(**kwargs):
+def select_eq(**kwargs) -> list:
   return _select("eq", kwargs)
 
 
-def select_diy(condition: str):
+def select_diy(condition: str) -> list:
   result = client.query(
     collection_name=COLLECTION_NAME, filter=condition, output_fields=["*"]
   )
   return result
 
 
-def select_like(**kwargs):
+def select_like(**kwargs) -> list:
   return _select("like", kwargs)
 
 
