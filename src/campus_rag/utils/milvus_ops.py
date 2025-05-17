@@ -21,19 +21,24 @@ _types = {
 def _select(
   collection_name: str, _type: str, kwargs: dict, output_fields: list[str], limit=-1
 ) -> list[dict]:
-  keys = kwargs.keys()
-  condition = ""
-  for i, key in enumerate(keys):
-    if type(kwargs[key]) == str:
-      kwargs[key] = f'"{kwargs[key]}"'
-    condition += f"{key} {_types[_type]} {kwargs[key]}"
-    if i != len(keys) - 1:
-      condition += f" AND "
-  # print(condition)
-  result = client.query(
-    collection_name=collection_name, filter=condition, output_fields=output_fields
-  )
-  return result[:limit]
+  try:
+    keys = kwargs.keys()
+    condition = ""
+    for i, key in enumerate(keys):
+      if type(kwargs[key]) == str:
+        kwargs[key] = f'"{kwargs[key]}"'
+      condition += f"{key} {_types[_type]} {kwargs[key]}"
+      if i != len(keys) - 1:
+        condition += f" AND "
+    # print(condition)
+    result = client.query(
+      collection_name=collection_name, filter=condition, output_fields=output_fields
+    )
+    return result[:limit]
+  except Exception as e:
+    raise e
+  finally:
+    return [{"msg": "Something error happened"}]
 
 
 def select_eq(
@@ -109,29 +114,34 @@ def select_from_inner_datas(
   for inner_kwargs, given an example: \n
   inner_keys=[["time", "weeks"]], value=["1-16周"]
   """
-  if len(inner_keys) != len(values):
-    raise ValueError("inner_keys and values must have the same length")
-  condition = ""
-  for i, (inner_key, value) in enumerate(zip(inner_keys, values)):
-    condition += f"{parent_key}"
-    for key in inner_key:
-      key = f'"{key}"' if type(key) == str else key
-      condition += f"[{key}]"
-    value = f'"{value}"' if type(value) == str else value
-    condition += f" {_types[_type]} {value}"
-    if i != len(inner_keys) - 1:
-      condition += f" AND "  # add && restriction
-  # considering other possibly existing restriction
-  for key, value in kwargs.items():
-    value = f'"{value}"' if type(value) == str else value
-    if condition == "":  # avoid special condition, e.g. inner_keys=[](empty list)
-      condition = f"{key} {_types[_type]} {value}"
-    else:
-      condition += f" AND {key} {_types[_type]} {value}"
-  result = client.query(
-    collection_name=collection_name, filter=condition, output_fields=output_fields
-  )
-  return result[:limit]
+  try:
+    if len(inner_keys) != len(values):
+      raise ValueError("inner_keys and values must have the same length")
+    condition = ""
+    for i, (inner_key, value) in enumerate(zip(inner_keys, values)):
+      condition += f"{parent_key}"
+      for key in inner_key:
+        key = f'"{key}"' if type(key) == str else key
+        condition += f"[{key}]"
+      value = f'"{value}"' if type(value) == str else value
+      condition += f" {_types[_type]} {value}"
+      if i != len(inner_keys) - 1:
+        condition += f" AND "  # add && restriction
+    # considering other possibly existing restriction
+    for key, value in kwargs.items():
+      value = f'"{value}"' if type(value) == str else value
+      if condition == "":  # avoid special condition, e.g. inner_keys=[](empty list)
+        condition = f"{key} {_types[_type]} {value}"
+      else:
+        condition += f" AND {key} {_types[_type]} {value}"
+    result = client.query(
+      collection_name=collection_name, filter=condition, output_fields=output_fields
+    )
+    return result[:limit]
+  except Exception as e:
+    raise e
+  finally:
+    return [{"msg": "Something error happened"}]
 
 
 def drop_collections(mc: MilvusClient, collection_name: str):
@@ -213,10 +223,11 @@ if __name__ == "__main__":
       ["*"],
       "eq",
       "time_place",
-      inner_keys=[["time", "weeks"], ["time", "day_in_week"]],
-      values=["1-16周", 5],
+      inner_keys=[["time", "weeks"], ["time", "day_in_week"], ["place"]],
+      values=["1-16周", 4, "逸B-201"],
       limit=2,
-      department_name="法学院",
+      # department_name="法学院",
+      grades=2022  # trigger error
     )
   )
   # print(select_eq(output_fields=["*"], course_number="06020300"))
