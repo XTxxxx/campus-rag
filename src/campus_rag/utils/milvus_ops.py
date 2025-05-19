@@ -3,7 +3,11 @@ support operations for milvus, e.g. select by keywords
 """
 
 from pymilvus import MilvusClient, DataType
-from src.campus_rag.utils.const import *
+from src.campus_rag.utils.const import (
+  MILVUS_URI,
+  COLLECTION_NAME,
+  COURSES_COLLECTION_NAME,
+)
 
 client = MilvusClient(uri=MILVUS_URI)
 
@@ -227,7 +231,7 @@ if __name__ == "__main__":
       values=["1-16周", 4, "逸B-201"],
       limit=2,
       # department_name="法学院",
-      grades=2022  # trigger error
+      grades=2022,  # trigger error
     )
   )
   # print(select_eq(output_fields=["*"], course_number="06020300"))

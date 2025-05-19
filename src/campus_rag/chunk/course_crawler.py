@@ -3,6 +3,7 @@ import urllib
 import json
 import typer
 import time
+from src.campus_rag.utils.logging_config import logger
 from tqdm import tqdm
 
 TOKEN = 'desensitized'
@@ -131,6 +132,7 @@ def parse_course_list():
     new_course["teaching_class_id"] = course["teachingClassID"]
     new_course["hours"] = course["hours"]
     new_course["school_term"] = course["schoolTerm"]
+    new_course["credit"] = course["credit"]
     # Process the course time
     new_course["time_place"] = parse_time_place(course)
     new_course["grade"] = course["recommendGrade"]
@@ -214,6 +216,27 @@ def course_clean():
     _merge_summary(course)
     _trans_int(course)
 
+  with open(LIST_PATH, "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+@app.command()
+def patch_credit():
+  """
+  Patch the credit of the course list.
+  """
+  with open(LIST_PATH, "r", encoding="utf-8") as f:
+    data = json.load(f)
+  with open(RAW_PATH, "r", encoding="utf-8") as f:
+    raw_data = json.load(f)
+  cnt = 0
+  for course in data:
+    for raw_course in raw_data:
+      if course["course_number"] == raw_course["courseNumber"]:
+        course["credit"] = float(raw_course["credit"])
+        cnt += 1
+        break
+  logger.info(f"Patched {cnt} courses.")
   with open(LIST_PATH, "w", encoding="utf-8") as f:
     json.dump(data, f, ensure_ascii=False, indent=2)
 
