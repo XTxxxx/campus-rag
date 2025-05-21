@@ -1,14 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.campus_rag.api.routes import rag, conversation
-from src.campus_rag.utils.logging_config import configure_logger
-import logging
+from src.campus_rag.utils.logging_config import setup_logger
 
 origins = ["*"]
 
-configure_logger("info")
-logger = logging.getLogger(__name__)
-logger.info("Starting FastAPI application...")
+logger = setup_logger("debug")
 app = FastAPI()
 app.add_middleware(
   CORSMiddleware,

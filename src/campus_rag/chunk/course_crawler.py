@@ -3,8 +3,10 @@ import urllib
 import json
 import typer
 import time
-from src.campus_rag.utils.logging_config import logger
+from src.campus_rag.utils.logging_config import setup_logger
 from tqdm import tqdm
+
+setup_logger("debug")
 
 TOKEN = 'desensitized'
 COOKIE = 'desensitized'

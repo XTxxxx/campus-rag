@@ -1,18 +1,5 @@
 import logging
-
-logger = logging.getLogger()
-
-
-def remove_other_loggers():
-  """
-  Remove all other loggers except the ones starting with "rag".
-  """
-  for lib in logging.root.manager.loggerDict:
-    if not lib.startswith("campus_rag") and not lib.startswith("src.campus_rag"):
-      logging.getLogger(lib).setLevel(logging.WARNING)
-
-remove_other_loggers()
-
+import sys
 
 
 class ColoredFormatter(logging.Formatter):
@@ -35,11 +22,14 @@ class ColoredFormatter(logging.Formatter):
     return f"{log_color}{message}{self.RESET}"  # Reset color at the end
 
 
-remove_other_loggers()
-log_level = logging.DEBUG
-logger.setLevel(log_level)
-console_handler = logging.StreamHandler()
-console_handler.setLevel(log_level)
-formatter = ColoredFormatter("%(asctime)s - %(levelname)s - %(message)s")
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
+def setup_logger(name="src.campus_rag", level=logging.DEBUG):
+  logger = logging.getLogger(name)
+  logger.setLevel(level)
+  logger.propagate = False  # 防止冒泡到 root logger
+
+  if not logger.handlers:
+    formatter = ColoredFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+  return logger

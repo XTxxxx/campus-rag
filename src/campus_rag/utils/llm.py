@@ -17,7 +17,7 @@ redis_client = redis.Redis(
   host="localhost", port=6379, password="123456", decode_responses=True
 )
 
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 _llm_name = "qwen-max-2025-01-25"
 _llm_key = os.getenv("QWEN_API_KEY")
 _llm_bare = OpenAI(base_url=_ALI_URL, api_key=_llm_key)

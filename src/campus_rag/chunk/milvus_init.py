@@ -13,21 +13,19 @@ TODO: add more collections(maybe not necessary), insert real data crawled from t
 """
 
 from src.campus_rag.utils.chunk_ops import construct_embedding_key
-from src.campus_rag.utils.logging_config import configure_logger
+from src.campus_rag.utils.logging_config import setup_logger
 from sentence_transformers import SentenceTransformer  # noqa
 from milvus_model.hybrid import BGEM3EmbeddingFunction  # noqa
 
 import typer
 import os
 import json
-import logging
 
 from pymilvus import DataType, MilvusClient
 from tqdm import tqdm
 
 app = typer.Typer()
-configure_logger("info")
-logger = logging.getLogger(__name__)
+logger = setup_logger("info")
 
 
 COLLECTION_NAME = "example"

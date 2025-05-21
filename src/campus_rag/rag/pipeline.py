@@ -1,4 +1,3 @@
-from curses import meta
 from pymilvus import MilvusClient
 from src.campus_rag.rag.enhance_query import enhance_query
 from src.campus_rag.rag.reflect import reflect_query, ReflectionCategory
