@@ -5,9 +5,8 @@
 - 集成的数据
   - [x] 老师的相关信息
   - [x] 红黑榜
-  - [ ] 课表
-  - [ ] 学生手册
-  - [ ] 迭代三再做吧...
+  - [x] 课表
+  - [x] 学生手册
 
 
 - **优点（项目组织方面）**
@@ -32,7 +31,7 @@
 - Develop (with uv)
    - `uv sync --load`
    - Run scripts with uv e.g.     `uv run python src/campus_rag/chunk/milvus_init.py`
-   - To start backend server, run `uv run uvicorn src.campus_rag.rag.api.main:app`
+   - To start backend server, run `uv run uvicorn campus_rag.rag.api.main:app`
    - Before commit, `uv run ruff format .`
 
 - Build

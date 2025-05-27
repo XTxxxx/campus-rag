@@ -2,9 +2,12 @@
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["src"]
-include-package-data = false
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
 
 [tool.ruff]
 line-length = 88
@@ -35,4 +38,6 @@ dependencies = [
   "uvicorn>=0.34.2",
   "redis>=6.0.0",
   "ruff>=0.11.9",
+  "sqlmodel>=0.0.24",
+  "aiosqlite>=0.21.0",
 ]

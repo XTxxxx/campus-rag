@@ -1,7 +1,7 @@
 import logging
 import json
 from functools import reduce
-from src.campus_rag.utils.llm import llm_chat_async
+from campus_rag.utils.llm import llm_chat_async
 
 logger = logging.getLogger(__name__)
 

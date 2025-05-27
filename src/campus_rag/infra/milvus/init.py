@@ -12,10 +12,14 @@ Usage:
 TODO: add more collections(maybe not necessary), insert real data crawled from the nju websites
 """
 
-from src.campus_rag.utils.chunk_ops import construct_embedding_key
-from src.campus_rag.utils.logging_config import setup_logger
-from sentence_transformers import SentenceTransformer  # noqa
-from milvus_model.hybrid import BGEM3EmbeddingFunction  # noqa
+from campus_rag.utils.chunk_ops import construct_embedding_key
+from campus_rag.utils.logging_config import setup_logger
+from campus_rag.constants.milvus import (
+  MILVUS_URI,
+  COLLECTION_NAME,
+  COURSES_COLLECTION_NAME,
+)
+from ..embedding import embedding_model, sparse_embedding_model
 
 import typer
 import os
@@ -28,13 +32,7 @@ app = typer.Typer()
 logger = setup_logger("info")
 
 
-COLLECTION_NAME = "example"
-MILVUS_URI = "http://localhost:19530"
 _MAX_LENGTH = 65535
-logger.info("Loading embedding model...")
-embedding_model = SentenceTransformer("intfloat/multilingual-e5-large")
-sparse_embedding_model = BGEM3EmbeddingFunction(device="cuda:0")
-logger.info("Embedding model loaded successfully.")
 _DATA_ROOT = "./data"
 
 

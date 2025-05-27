@@ -22,7 +22,11 @@ class ColoredFormatter(logging.Formatter):
     return f"{log_color}{message}{self.RESET}"  # Reset color at the end
 
 
-def setup_logger(name="src.campus_rag", level=logging.DEBUG):
+def setup_logger(
+  name="campus_rag", level=logging.DEBUG, need_config: bool = True
+) -> logging.Logger:
+  if not need_config:
+    return logging.getLogger(name)
   logger = logging.getLogger(name)
   logger.setLevel(level)
   logger.propagate = False  # 防止冒泡到 root logger

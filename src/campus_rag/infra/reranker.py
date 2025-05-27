@@ -10,7 +10,7 @@ from typing import List
 import requests
 from FlagEmbedding import FlagReranker, LayerWiseFlagLLMReranker
 from sentence_transformers import CrossEncoder
-from src.campus_rag.utils.chunk_ops import construct_embedding_key
+from campus_rag.utils.chunk_ops import construct_embedding_key
 
 
 class ModelReranker:

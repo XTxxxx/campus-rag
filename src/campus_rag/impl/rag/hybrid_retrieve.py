@@ -4,14 +4,9 @@ from pymilvus import (
   WeightedRanker,
 )
 from typing import List
-from src.campus_rag.utils.chunk_ops import construct_embedding_key
-from src.campus_rag.chunk.milvus_init import (
-  COLLECTION_NAME,
-  embedding_model,
-  sparse_embedding_model,
-)
+from campus_rag.constants.milvus import COLLECTION_NAME
+from campus_rag.infra.embedding import embedding_model, sparse_embedding_model
 from fastapi.concurrency import run_in_threadpool
-import time
 
 
 class HybridRetriever:
