@@ -2,6 +2,7 @@
 support operations for milvus, e.g. select by keywords
 """
 
+from typing import Optional
 from pymilvus import MilvusClient, DataType
 from campus_rag.constants.milvus import (
   MILVUS_URI,
@@ -66,13 +67,16 @@ def select_eq(
 
 
 def select_diy(
-  collection_name: str, condition: str, output_fields: list[str], limit=-1
+  collection_name: str, condition: Optional[str], output_fields: list[str], limit=-1
 ) -> list[dict]:
   """best recommended select function, with the least limitation to design specific claus"""
   result = client.query(
-    collection_name=collection_name, filter=condition, output_fields=output_fields
+    collection_name=collection_name,
+    filter=condition,
+    output_fields=output_fields,
+    limit=limit,
   )
-  return result[:limit]
+  return result
 
 
 def select_like(
@@ -149,76 +153,14 @@ def select_from_inner_datas(
       else:
         condition += f" AND {key} {_types[_type]} {value}"
     result = client.query(
-      collection_name=collection_name, filter=condition, output_fields=output_fields
+      collection_name=collection_name,
+      filter=condition,
+      output_fields=output_fields,
+      limit=limit,
     )
-    return result[:limit]
+    return result
   except Exception as e:
     logger.error(f"Error in select_from_inner_datas: {e}")
-
-
-def drop_collections(mc: MilvusClient, collection_name: str):
-  """Drop the collection if it exists."""
-  if mc.has_collection(collection_name):
-    mc.drop_collection(collection_name)
-    print(f"Successfully dropped collection {collection_name}")
-  else:
-    print(f"Collection {collection_name} does not exist")
-
-
-def create_course_collection(mc: MilvusClient, collection_name: str, embedding_model):
-  # for testing select function's correctness
-  if mc.has_collection(collection_name):
-    raise ValueError(f"Collection {collection_name} already exists")
-  schema = MilvusClient.create_schema(auto_id=True, enable_dynamic_field=True)
-  # create a schema for course list
-  schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
-  schema.add_field(
-    field_name="embedding",
-    datatype=DataType.FLOAT_VECTOR,
-    dim=embedding_model.get_sentence_embedding_dimension(),
-  )
-  schema.add_field(field_name="sparse_embedding", datatype=DataType.SPARSE_FLOAT_VECTOR)
-  schema.add_field("course_name", DataType.VARCHAR, max_length=128)
-  schema.add_field("course_number", DataType.VARCHAR, max_length=128)
-  schema.add_field("teacher_name", DataType.VARCHAR, max_length=128)
-  schema.add_field("department_name", DataType.VARCHAR, max_length=128)
-  schema.add_field("campus", DataType.VARCHAR, max_length=128)
-  schema.add_field("reference_book", DataType.VARCHAR, max_length=128)
-  schema.add_field("teaching_class_id", DataType.VARCHAR, max_length=128)
-  schema.add_field("hours", DataType.INT16)
-  schema.add_field("school_term", DataType.VARCHAR, max_length=128)
-  # time_place_field = FieldSchema(
-  #   name="time_place",
-  #   dtype=DataType.JSON,
-  # )
-  schema.add_field("time_place", DataType.JSON)
-  schema.add_field("teaching_purpose", DataType.VARCHAR, max_length=16384)
-  schema.add_field("summary", DataType.VARCHAR, max_length=16384)
-  schema.add_field(
-    "grades",
-    DataType.ARRAY,
-    element_type=DataType.INT16,
-    max_capacity=10,  # array field using element_type
-  )
-  # add indexes
-  index_params = mc.prepare_index_params()
-  # vector field must have an index
-  index_params.add_index(
-    "embedding",
-    index_type="FLAT",
-    metric_type="IP",
-  )
-  index_params.add_index(
-    "sparse_embedding", index_type="SPARSE_INVERTED_INDEX", metric_type="IP"
-  )
-  index_params.add_index("course_number")
-  index_params.add_index("teacher_name")
-  index_params.add_index("course_name")
-  # start creating
-  mc.create_collection(
-    collection_name=collection_name, schema=schema, index_params=index_params
-  )
-  print(f"Created collection {collection_name}")
 
 
 # test

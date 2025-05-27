@@ -59,7 +59,8 @@ def construct_meta_for_course(chunk: Chunk) -> dict:
     "course_name": chunk["course_name"],
     "course_number": chunk["course_number"],
     "teacher_name": chunk["teacher_name"],
-    "department_name": chunk["department_name"],
+    "department_name": chunk["department_name"], 
+    "course_type": chunk.get("course_type", "专业课"), # fall back to "专业课" if not specified
     "campus": chunk["campus"],
     "reference_book": chunk["reference_book"],
     "teaching_class_id": chunk["teaching_class_id"],
