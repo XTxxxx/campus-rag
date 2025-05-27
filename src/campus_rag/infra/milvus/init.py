@@ -12,7 +12,11 @@ Usage:
 TODO: add more collections(maybe not necessary), insert real data crawled from the nju websites
 """
 
-from campus_rag.utils.chunk_ops import construct_embedding_key
+from campus_rag.utils.chunk_ops import (
+  construct_embedding_key,
+  construct_embedding_key_for_course,
+  construct_meta_for_course,
+)
 from campus_rag.utils.logging_config import setup_logger
 from campus_rag.constants.milvus import (
   MILVUS_URI,
@@ -35,50 +39,61 @@ logger = setup_logger("info")
 _MAX_LENGTH = 65535
 _DATA_ROOT = "./data"
 
+collections = [COLLECTION_NAME, COURSES_COLLECTION_NAME]
+
 
 def create_collections(mc: MilvusClient):
+  """Create Milvus collections for conversation and course data.
+  Use milvus's dynamic field feature to create a collection with dynamic fields.
+  Meta would be stored as json in dynamic field.
+
+  Args:
+      mc (MilvusClient): milvus client instance
   """
-  Drop the collection if it exists and create a new one.
-  """
-  if mc.has_collection(COLLECTION_NAME):
-    mc.drop_collection(COLLECTION_NAME)
-    logger.info(f"Successfully dropped collection {COLLECTION_NAME}")
-  schema = MilvusClient.create_schema(
-    auto_id=True,
-    enable_dynamic_field=True,
-  )
-  schema.add_field("id", DataType.INT64, is_primary=True)
-  schema.add_field(
-    "embedding",
-    DataType.FLOAT_VECTOR,
-    dim=embedding_model.get_sentence_embedding_dimension(),
-  )
-  # Refer to https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/rag/rag-enrichment-phase for details
-  # sparse embedding: sparse vector used for keyword search
-  schema.add_field("sparse_embedding", DataType.SPARSE_FLOAT_VECTOR)
-  # source: where the chunk comes from, used for routing
-  schema.add_field("source", DataType.VARCHAR, max_length=_MAX_LENGTH)
-  schema.add_field("chunk", DataType.VARCHAR, max_length=_MAX_LENGTH)
-  schema.add_field("cleaned_chunk", DataType.VARCHAR, max_length=_MAX_LENGTH)
-  schema.add_field("context", DataType.VARCHAR, max_length=_MAX_LENGTH)
+  for collection in collections:
+    if mc.has_collection(collection):
+      mc.drop_collection(collection)
+      logger.info(f"Successfully dropped collection {collection}")
+    schema = MilvusClient.create_schema(
+      auto_id=True,
+      enable_dynamic_field=True,
+    )
+    schema.add_field("id", DataType.INT64, is_primary=True)
+    schema.add_field(
+      "embedding",
+      DataType.FLOAT_VECTOR,
+      dim=embedding_model.get_sentence_embedding_dimension(),
+    )
+    # Refer to https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/rag/rag-enrichment-phase for details
+    # sparse embedding: sparse vector used for keyword search
+    schema.add_field("sparse_embedding", DataType.SPARSE_FLOAT_VECTOR)
+    # source: where the chunk comes from, used for routing
+    schema.add_field("source", DataType.VARCHAR, max_length=_MAX_LENGTH, nullable=True)
+    schema.add_field("chunk", DataType.VARCHAR, max_length=_MAX_LENGTH)
+    schema.add_field(
+      "cleaned_chunk", DataType.VARCHAR, max_length=_MAX_LENGTH, nullable=True
+    )
+    schema.add_field("context", DataType.VARCHAR, max_length=_MAX_LENGTH, nullable=True)
 
-  # create indexes
-  index_params = mc.prepare_index_params()
-  index_params.add_index(field_name="embedding", index_type="FLAT", metric_type="IP")
-  index_params.add_index(
-    field_name="source",
-  )
-  index_params.add_index(
-    field_name="sparse_embedding", index_type="SPARSE_INVERTED_INDEX", metric_type="IP"
-  )
+    # create indexes
+    index_params = mc.prepare_index_params()
+    index_params.add_index(field_name="embedding", index_type="FLAT", metric_type="IP")
+    index_params.add_index(
+      field_name="source",
+    )
+    index_params.add_index(
+      field_name="sparse_embedding",
+      index_type="SPARSE_INVERTED_INDEX",
+      metric_type="IP",
+    )
 
-  mc.create_collection(
-    collection_name=COLLECTION_NAME, schema=schema, index_params=index_params
-  )
-  logger.info(f"Successfully created collection {COLLECTION_NAME}")
+    mc.create_collection(
+      collection_name=collection, schema=schema, index_params=index_params
+    )
+    logger.info(f"Successfully created collection {collection}")
 
 
-def insert_data(mc: MilvusClient):
+def insert_teacher_table(mc: MilvusClient):
   """
   Insert data into the collection.
   """
@@ -104,11 +119,35 @@ def insert_data(mc: MilvusClient):
   logger.info("Successfully inserted data into Milvus")
 
 
+def insert_course_data(mc: MilvusClient):
+  """
+  Insert course data into the collection.
+  Maybe other collections should be refactored into structure like this.
+  TODO: Use batch insert to accelerate.
+  """
+  data_path = os.path.join(_DATA_ROOT, "course_list.json")
+  with open(data_path, "r", encoding="utf-8") as f:
+    data = json.load(f)
+  for chunk in tqdm(data):
+    embedding_key = construct_embedding_key_for_course(chunk)
+    mc.insert(
+      collection_name=COURSES_COLLECTION_NAME,
+      data={
+        "embedding": embedding_model.encode(embedding_key),
+        "sparse_embedding": sparse_embedding_model([embedding_key])["sparse"],
+        "chunk": embedding_key,
+        "meta": construct_meta_for_course(chunk),
+      },
+    )
+  logger.info("Successfully inserted course data into Milvus")
+
+
 @app.command()
 def all():
   mc = MilvusClient(uri=MILVUS_URI)
   create_collections(mc)
-  insert_data(mc)
+  insert_teacher_table(mc)
+  insert_course_data(mc)
 
 
 @app.command()

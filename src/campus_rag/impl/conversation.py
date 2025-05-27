@@ -6,7 +6,6 @@ from fastapi import HTTPException
 from typing import Optional
 from campus_rag.utils.llm import llm_chat_async
 import logging
-import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +98,7 @@ async def extract_title_from_content(content: str) -> str:
 
 async def add_message_to_conversation(
   user_id: str,
-  conversation_id: UUID4,
+  conversation_id: str,
   content: str,
   role: str,
   metainfo: Optional[str] = None,

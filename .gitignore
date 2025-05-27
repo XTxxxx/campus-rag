@@ -5,3 +5,4 @@ campus_rag.egg-info/
 /src/campus_rag/chunk/course.CSV
 .idea/
 .ruff_cache/
+.vscode/
