@@ -6,16 +6,14 @@ import hashlib
 import json
 import os
 import logging
-import redis
 from openai import OpenAI, AsyncOpenAI
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 from typing import TypedDict, AsyncGenerator
+from campus_rag.infra.redis import redis_client
 
 _ALI_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-redis_client = redis.Redis(
-  host="localhost", port=6379, password="123456", decode_responses=True
-)
+
 
 logger = logging.getLogger(__name__)
 _llm_name = "qwen-max-2025-01-25"
