@@ -270,9 +270,9 @@ def cal_total(filter_expr: str) -> int:
   return len(res)
 
 
-async def filter_courses(filter_arg: FilterArgs) -> FilterResult:
-  """Filters courses based on the provided filter criteria."""
-  course_filter = filter_arg.filter
+async def filter_courses(
+  course_filter: CourseFilter, limit: int = COURSES_MAX, offset: int = 0
+) -> FilterResult:
   expr = gen_filter_expr(course_filter)
   logger.debug(f"Generated filter expression: {expr}")
   total = cal_total(expr)
@@ -280,8 +280,8 @@ async def filter_courses(filter_arg: FilterArgs) -> FilterResult:
   if course_filter.preference:  # Perform hybrid search if preference is set
     search_config = SearchConfig(
       filter_expr=expr,
-      limit=filter_arg.size,
-      offset=filter_arg.start_idx,
+      limit=limit,
+      offset=offset,
       output_fields=["id", "meta", "distance"],
     )
     search_res = await filter_retriever.retrieve(
@@ -293,14 +293,22 @@ async def filter_courses(filter_arg: FilterArgs) -> FilterResult:
       filtered_courses=course_view_list,
       total=total,
     )
-
   search_results = campus_rag_mc.query(
     COURSES_COLLECTION_NAME,
     expr,
     ["id", "meta"],
-    limit=filter_arg.size,
-    offset=filter_arg.start_idx,
+    limit=limit,
+    offset=offset,
   )
   logger.debug(f"Search results count: {len(search_results)}")
   course_view_list = [CourseView.from_filter_result(data) for data in search_results]
   return FilterResult(filtered_courses=course_view_list, total=total)
+
+
+async def filter_courses_pagination(filter_arg: FilterArgs) -> FilterResult:
+  """Filters courses based on the provided filter criteria."""
+  return await filter_courses(
+    course_filter=filter_arg.filter,
+    limit=filter_arg.size,
+    offset=filter_arg.start_idx,
+  )

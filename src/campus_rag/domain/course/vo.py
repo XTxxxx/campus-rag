@@ -21,19 +21,22 @@ class CourseView(BaseModel):
     description="Time details of the course including weekday, start time, and duration",
   )
   description: Optional[str] = Field(
+    default=None,
     description="Description of the course, including prerequisites and content",
   )
   rednblack: Optional[str] = Field(
+    default=None,
     description="Red and Black table representation of the course",
   )
   distance: Optional[float] = Field(
+    default=None,
     description="Distance for vector if use preference search, otherwise None",
   )
 
   @classmethod
   def from_filter_result(cls, course: dict) -> "CourseView":
     """Converts a course dictionary to a CourseView."""
-    teacher_str = course["meta"].get("teacher", "")
+    teacher_str = course["meta"].get("teacher_name", "")
     teachers = teacher_str.split(",") if teacher_str else []
     if course["meta"].get("time_place"):
       time_list = [

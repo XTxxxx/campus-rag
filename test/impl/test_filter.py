@@ -1,5 +1,5 @@
 from logging import Filter
-from campus_rag.impl.course_scheduler.filter import filter_courses
+from campus_rag.impl.course_scheduler.filter import filter_courses_pagination
 from campus_rag.domain.course.po import CourseFilter, FilterArgs
 from campus_rag.utils.logging_config import setup_logger
 import pytest
@@ -20,7 +20,7 @@ async def test_filter_by_course_name():
     size=10,
   )
 
-  filter_res = await filter_courses(filter_args)
+  filter_res = await filter_courses_pagination(filter_args)
   courses = filter_res.filtered_courses
   total = filter_res.total
   logger.info(f"Results count: {len(courses)} out of {total} total courses")
@@ -41,7 +41,7 @@ async def test_filter_by_weekday():
     size=10,
   )
 
-  filter_res = await filter_courses(filter_args)
+  filter_res = await filter_courses_pagination(filter_args)
   courses = filter_res.filtered_courses
   logger.info(f"Results count: {len(courses)} out of {filter_res.total} total courses")
   if courses:
@@ -65,7 +65,7 @@ async def test_filter_multiple_criteria():
     size=10,
   )
 
-  filter_res = await filter_courses(filter_args)
+  filter_res = await filter_courses_pagination(filter_args)
   courses = filter_res.filtered_courses
 
   logger.info(f"Results count: {len(courses)} out of {filter_res.total} total courses")
@@ -85,7 +85,7 @@ async def test_filter_empty():
     size=10,
   )
 
-  filter_res = await filter_courses(filter_args)
+  filter_res = await filter_courses_pagination(filter_args)
   courses = filter_res.filtered_courses
   # Assert Length should in [0, 10]
   assert len(courses) <= 10, "Result length is out of expected range"
@@ -102,18 +102,18 @@ async def test_pagination():
   logger.info("Starting test: Pagination")
 
   # First, filter top 20 courses
-  all_results = await filter_courses(
+  all_results = await filter_courses_pagination(
     FilterArgs(filter=CourseFilter(), start_idx=0, size=20)
   )
   all_courses = all_results.filtered_courses
   logger.info(f"Total results count: {len(all_courses)}")
 
   # Paginate results
-  first_page_res = await filter_courses(
+  first_page_res = await filter_courses_pagination(
     FilterArgs(filter=CourseFilter(), start_idx=0, size=10)
   )
   first_page = first_page_res.filtered_courses
-  second_page_res = await filter_courses(
+  second_page_res = await filter_courses_pagination(
     FilterArgs(filter=CourseFilter(), start_idx=10, size=10)
   )
   second_page = second_page_res.filtered_courses
@@ -139,7 +139,7 @@ async def test_preference_filter():
     size=10,
   )
 
-  filter_res = await filter_courses(filter_args)
+  filter_res = await filter_courses_pagination(filter_args)
   courses = filter_res.filtered_courses
   logger.info(f"Results count: {len(courses)} out of {filter_res.total} total courses")
   if courses:
@@ -156,18 +156,18 @@ async def test_preference_pagination():
   logger.info("Starting test: Preference filter with pagination")
 
   # First, filter top 20 courses with preference
-  all_results = await filter_courses(
+  all_results = await filter_courses_pagination(
     FilterArgs(filter=CourseFilter(preference="我想选一门数学课"), start_idx=0, size=20)
   )
   all_courses = all_results.filtered_courses
   logger.info(f"Total results count: {len(all_courses)}")
 
   # Paginate results
-  first_page_res = await filter_courses(
+  first_page_res = await filter_courses_pagination(
     FilterArgs(filter=CourseFilter(preference="我想选一门数学课"), start_idx=0, size=10)
   )
   first_page = first_page_res.filtered_courses
-  second_page_res = await filter_courses(
+  second_page_res = await filter_courses_pagination(
     FilterArgs(
       filter=CourseFilter(preference="我想选一门数学课"), start_idx=10, size=10
     )

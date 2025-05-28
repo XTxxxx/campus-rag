@@ -5,7 +5,7 @@ from campus_rag.impl.course_scheduler.show_info import (
   list_grades,
   list_types,
 )
-from campus_rag.impl.course_scheduler.filter import filter_courses
+from campus_rag.impl.course_scheduler.filter import filter_courses_pagination
 from campus_rag.domain.course.po import CourseFilter, FilterArgs
 from campus_rag.domain.course.vo import CourseView, FilterResult, PlanView
 from campus_rag.impl.course_scheduler.schedule import generate_schedule
@@ -55,7 +55,7 @@ def get_types() -> list[str]:
 @router.post("/course/filter", response_model=FilterResult)
 async def get_filtered_courses(filter: FilterArgs) -> FilterResult:
   """Returns a list of filtered courses."""
-  return await filter_courses(filter)
+  return await filter_courses_pagination(filter)
 
 
 @router.post("/course/genplan", response_model=list[CourseView])

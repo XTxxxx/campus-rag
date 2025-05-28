@@ -112,7 +112,6 @@ def parse_time_place(course) -> list:
     new_time["end_at"] = time_arrange["endSection"]
     times.append(new_time)
   if len(times) != len(places):
-    breakpoint()
     print(f"Warning: {course['courseName']} has different time and place lengths")
   return [{"time": times[i], "place": places[i]} for i in range(len(times))]
 
