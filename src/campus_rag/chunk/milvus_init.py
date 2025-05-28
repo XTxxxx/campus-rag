@@ -21,9 +21,12 @@ import typer
 import os
 import json
 import logging
+from pathlib import Path
 
-from pymilvus import DataType, MilvusClient
+from pymilvus import DataType, MilvusClient, FieldSchema
 from tqdm import tqdm
+from src.campus_rag.utils.const import *
+from src.campus_rag.utils.milvus_ops import create_course_collection
 
 app = typer.Typer()
 configure_logger("info")
@@ -37,7 +40,7 @@ logger.info("Loading embedding model...")
 embedding_model = SentenceTransformer("intfloat/multilingual-e5-large")
 sparse_embedding_model = BGEM3EmbeddingFunction(device="cuda:0")
 logger.info("Embedding model loaded successfully.")
-_DATA_ROOT = "./data"
+_DATA_ROOT = str(Path(__file__).parent) + "/../../../data"
 
 
 def create_collections(mc: MilvusClient):
@@ -86,7 +89,7 @@ def insert_data(mc: MilvusClient):
   """
   Insert data into the collection.
   """
-  datas = ["nju_se_teacher.json", "red_and_black_table.json"]
+  datas = ["nju_se_teacher.json", "red_and_black_table.json", "course_list.json"]
   logger.info("Inserting data into Milvus")
   for data in datas:
     data_path = os.path.join(_DATA_ROOT, data)
@@ -116,6 +119,69 @@ def all():
 
 
 @app.command()
+def create_courses_collection():
+  mc = MilvusClient(uri=MILVUS_URI)
+  create_course_collection(mc, COURSES_COLLECTION_NAME, embedding_model)
+
+
+@app.command()
+def insert_courses():
+  mc = MilvusClient(uri=MILVUS_URI)
+  if mc.has_collection(COURSES_COLLECTION_NAME):
+    mc.drop_collection(COURSES_COLLECTION_NAME)
+  create_course_collection(mc, COURSES_COLLECTION_NAME, embedding_model)
+  courses_path = "course_list.json"
+  logger.info("Starting to insert courses into Milvus")
+  data_path = os.path.join(_DATA_ROOT, courses_path)
+  with open(data_path, "r", encoding="utf-8") as f:
+    courses = json.load(f)
+  for course in tqdm(courses):
+    data = {}
+    nil = False
+    for key, value in course.items():
+      if value is None or (type(value) == list and len(value) == 0):
+        nil = True
+        break
+      # print(type(value))
+      if type(value) == str or type(value) == list:
+        if len(value) < 65535:
+          data[key] = value
+        else:
+          data[key] = value[:65535]
+      else:
+        data[key] = value
+    if nil:
+      continue
+    data_str = json.dumps(data)
+    try:
+      mc.insert(
+        collection_name=COURSES_COLLECTION_NAME,
+        data={
+          "embedding": embedding_model.encode(data_str),
+          "sparse_embedding": sparse_embedding_model([data_str])["sparse"],
+          "course_name": data.get("course_name", ""),
+          "course_number": data.get("course_number", ""),
+          "teacher_name": data.get("teacher_name", ""),
+          "department_name": data.get("department_name", ""),
+          "campus": data.get("campus", ""),
+          "reference_book": data.get("reference_book", ""),
+          "teaching_class_id": data.get("teaching_class_id", ""),
+          "hours": data.get("hours", 0),
+          "school_term": data.get("school_term", ""),
+          "time_place": data.get("time_place", [""])[0],
+          "teaching_purpose": data.get("teaching_purpose", ""),
+          "summary": data.get("summary", ""),
+          "grades": data.get("grades", []),
+        },
+      )
+    except Exception as e:
+      print(e)
+      print(data.get("summary", ""))
+      print(type(data.get("summary", "")))
+  logger.info("Finished inserting courses into Milvus")
+
+
+@app.command()
 def example():
   logger.info("Inserting example data into Milvus")
   mc = MilvusClient(uri=MILVUS_URI)
@@ -136,6 +202,16 @@ def example():
         "chunk": chunk["chunk"],
       },
     )
+
+
+@app.command()
+def select():
+  client = MilvusClient(uri="http://localhost:19530")
+
+  results = client.query(collection_name=COLLECTION_NAME, limit=10, output_fields=["*"])
+
+  for item in results:
+    print(item)
 
 
 if __name__ == "__main__":
