@@ -88,7 +88,8 @@ def select_all(limit: int) -> list[dict]:
   )
 
 
-def _construct_filter_expr(_type: str, parent_key: str=None, inner_keys: list[list[str]]=None, values: list=None, **kwargs):
+def _construct_filter_expr(_type: str, parent_key: str=None, inner_keys: list[list[str]]=None, values: list=None, **kwargs)\
+        -> str:
   condition = ""
   if parent_key and inner_keys and inner_keys:
     if len(inner_keys) != len(values):
@@ -160,7 +161,7 @@ def filter_with_embedding_select(
         values: list=None,
         limit=2,
         **kwargs,
-):
+) -> list[dict]:
   # embedding for query
   query_embedding = embedding_model.encode(query, normalize_embeddings=True)
   # query_sparse_embedding = sparse_embedding_model([query])["sparse"][[0]]
