@@ -9,9 +9,9 @@ from campus_rag.constants.milvus import (
   COLLECTION_NAME,
   COURSES_COLLECTION_NAME,
 )
+from campus_rag.infra.milvus.init import campus_rag_mc as client
 import logging
 
-client = MilvusClient(uri=MILVUS_URI)
 logger = logging.getLogger(__name__)
 
 _types = {

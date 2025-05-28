@@ -17,6 +17,7 @@ from campus_rag.constants.conversation import (
   ANSWER_PREFIX,
 )
 from campus_rag.domain.rag.po import ChatMessage, SearchConfig
+from campus_rag.infra.milvus.init import campus_rag_mc
 
 _KEYWORDS_PATH = "./data/keywords.json"
 logger = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ class ConverstaionPipeline:
 
   def __init__(self):
     self.enhance_query = enhance_query
-    self.mc = MilvusClient(uri=MILVUS_URI)
+    self.mc = campus_rag_mc
     self.hybrid_retriever = HybridRetriever(mc=self.mc, collection_name=COLLECTION_NAME)
     self.collection_name = COLLECTION_NAME
     self.reranker = reranker

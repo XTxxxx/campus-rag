@@ -7,16 +7,16 @@ from campus_rag.constants.milvus import (
 )
 from campus_rag.utils.logging_config import setup_logger
 from pymilvus import MilvusClient
+from campus_rag.infra.milvus.init import campus_rag_mc
 import asyncio
 
 
 logger = setup_logger()
-mc = MilvusClient(uri=MILVUS_URI)
 
 
 def test_hybrid_retriever():
   """Test the hybrid retriever with a sample query."""
-  retriever = HybridRetriever(mc=mc, collection_name=COLLECTION_NAME)
+  retriever = HybridRetriever(mc=campus_rag_mc, collection_name=COLLECTION_NAME)
 
   default_config = SearchConfig()
 

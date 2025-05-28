@@ -35,6 +35,7 @@ from tqdm import tqdm
 
 app = typer.Typer()
 logger = setup_logger("info")
+campus_rag_mc = MilvusClient(uri=MILVUS_URI)
 
 
 _MAX_LENGTH = 65535
@@ -43,17 +44,14 @@ _DATA_ROOT = "./data"
 collections = [COLLECTION_NAME, COURSES_COLLECTION_NAME]
 
 
-def create_collections(mc: MilvusClient):
+def create_collections():
   """Create Milvus collections for conversation and course data.
   Use milvus's dynamic field feature to create a collection with dynamic fields.
   Meta would be stored as json in dynamic field.
-
-  Args:
-      mc (MilvusClient): milvus client instance
   """
   for collection in collections:
-    if mc.has_collection(collection):
-      mc.drop_collection(collection)
+    if campus_rag_mc.has_collection(collection):
+      campus_rag_mc.drop_collection(collection)
       logger.info(f"Successfully dropped collection {collection}")
     schema = MilvusClient.create_schema(
       auto_id=True,
@@ -77,7 +75,7 @@ def create_collections(mc: MilvusClient):
     schema.add_field("context", DataType.VARCHAR, max_length=_MAX_LENGTH, nullable=True)
 
     # create indexes
-    index_params = mc.prepare_index_params()
+    index_params = campus_rag_mc.prepare_index_params()
     index_params.add_index(field_name="embedding", index_type="FLAT", metric_type="IP")
     index_params.add_index(
       field_name="source",
@@ -88,13 +86,13 @@ def create_collections(mc: MilvusClient):
       metric_type="IP",
     )
 
-    mc.create_collection(
+    campus_rag_mc.create_collection(
       collection_name=collection, schema=schema, index_params=index_params
     )
     logger.info(f"Successfully created collection {collection}")
 
 
-def insert_teacher_table(mc: MilvusClient):
+def insert_teacher_table():
   """
   Insert data into the collection.
   """
@@ -106,7 +104,7 @@ def insert_teacher_table(mc: MilvusClient):
       data = json.load(f)
     for chunk in tqdm(data):
       embedding_key = construct_embedding_key(chunk)
-      mc.insert(
+      campus_rag_mc.insert(
         collection_name=COLLECTION_NAME,
         data={
           "embedding": embedding_model.encode(embedding_key),
@@ -120,11 +118,10 @@ def insert_teacher_table(mc: MilvusClient):
   logger.info("Successfully inserted data into Milvus")
 
 
-def insert_course_data(mc: MilvusClient):
+def insert_course_data():
   """
   Insert course data into the collection.
   Maybe other collections should be refactored into structure like this.
-  TODO: Use batch insert to accelerate.
   """
   data_path = os.path.join(_DATA_ROOT, "course_list.json")
   with open(data_path, "r", encoding="utf-8") as f:
@@ -147,7 +144,7 @@ def insert_course_data(mc: MilvusClient):
       }
       for i in range(len(batch))
     ]
-    mc.insert(
+    campus_rag_mc.insert(
       collection_name=COURSES_COLLECTION_NAME,
       data=to_insert,
     )
@@ -157,23 +154,21 @@ def insert_course_data(mc: MilvusClient):
 
 @app.command()
 def all():
-  mc = MilvusClient(uri=MILVUS_URI)
-  create_collections(mc)
-  insert_teacher_table(mc)
-  insert_course_data(mc)
+  create_collections()
+  insert_teacher_table()
+  insert_course_data()
 
 
 @app.command()
 def example():
   logger.info("Inserting example data into Milvus")
-  mc = MilvusClient(uri=MILVUS_URI)
-  create_collections(mc)
+  create_collections()
   example_path = os.path.join(_DATA_ROOT, "example.json")
   with open(example_path, "r", encoding="utf-8") as f:
     data = json.load(f)
   for chunk in tqdm(data):
     embedding_key = construct_embedding_key(chunk)
-    mc.insert(
+    campus_rag_mc.insert(
       collection_name=COLLECTION_NAME,
       data={
         "embedding": embedding_model.encode(embedding_key),

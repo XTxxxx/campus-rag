@@ -1,11 +1,13 @@
 from campus_rag.impl.course_scheduler.filter import filter_courses
 from campus_rag.domain.course.po import CourseFilter
 from campus_rag.utils.logging_config import setup_logger
+import pytest
 
 logger = setup_logger()
 
 
-def test_filter_by_course_name():
+@pytest.mark.asyncio
+async def test_filter_by_course_name():
   """Test filtering courses by course name."""
   logger.info("Starting test: Filter by course name")
 
@@ -18,26 +20,24 @@ def test_filter_by_course_name():
     campus=None,
     grade=None,
     credit=None,
-    start_ind=0,
+    start_idx=0,
     size=10,
   )
 
-  result = filter_courses(filter1)
-  logger.info(f"Results count: {len(result)}")
-  if result:
-    logger.info(f"Example result: {result[0]}")
-
-  # if result:
-  #   logger.info(f"Sample result keys: {result[0].keys()}")
-  # else:
-  #   logger.info("No results found")
+  filter_res = await filter_courses(filter1)
+  courses = filter_res.filtered_courses
+  total = filter_res.total
+  logger.info(f"Results count: {len(courses)} out of {total} total courses")
+  if courses:
+    logger.info(f"Example result: {courses[0]}")
 
 
-def test_filter_by_weekday():
+@pytest.mark.asyncio
+async def test_filter_by_weekday():
   """Test filtering courses by weekday."""
   logger.info("Starting test: Filter by weekday")
 
-  filter2 = CourseFilter(
+  filter = CourseFilter(
     course_name=None,
     course_number=None,
     type=None,
@@ -46,21 +46,23 @@ def test_filter_by_weekday():
     campus=None,
     grade=None,
     credit=None,
-    start_ind=0,
+    start_idx=0,
     size=10,
   )
 
-  result = filter_courses(filter2)
-  logger.info(f"Results count: {len(result)}")
-  if result:
-    logger.info(f"Example result: {result[0]}")
+  filter_res = await filter_courses(filter)
+  courses = filter_res.filtered_courses
+  logger.info(f"Results count: {len(courses)} out of {filter_res.total} total courses")
+  if courses:
+    logger.info(f"Example result: {courses[0]}")
 
 
-def test_filter_multiple_criteria():
+@pytest.mark.asyncio
+async def test_filter_multiple_criteria():
   """Test filtering courses with multiple criteria."""
   logger.info("Starting test: Multiple filters")
 
-  filter3 = CourseFilter(
+  filter = CourseFilter(
     course_name=["操作", "算法", "分析"],
     course_number=None,
     # type=["专业课"],
@@ -69,23 +71,26 @@ def test_filter_multiple_criteria():
     campus=["仙林校区"],
     grade=[2022],
     credit=[2, 4],
-    start_ind=0,
+    start_idx=0,
     size=10,
   )
 
-  result = filter_courses(filter3)
-  logger.info(f"Results count: {len(result)}")
-  if result:
-    logger.info(f"Example result: {result[0]}")
+  filter_res = await filter_courses(filter)
+  courses = filter_res.filtered_courses
+
+  logger.info(f"Results count: {len(courses)} out of {filter_res.total} total courses")
+  if courses:
+    logger.info(f"Example result: {courses[0]}")
   else:
     logger.info("No results found for multiple criteria")
 
 
-def test_filter_empty():
+@pytest.mark.asyncio
+async def test_filter_empty():
   """Test filtering courses with empty filter."""
   logger.info("Starting test: Empty filter")
 
-  filter4 = CourseFilter(
+  filter = CourseFilter(
     course_name=None,
     course_number=None,
     type=None,
@@ -94,37 +99,91 @@ def test_filter_empty():
     campus=None,
     grade=None,
     credit=None,
-    start_ind=0,
+    start_idx=0,
     size=10,
   )
 
-  result = filter_courses(filter4)
-  logger.info(f"Results count: {len(result)}")
-  if result:
-    logger.info(f"Example result: {result[0]}")
+  filter_res = await filter_courses(filter)
+  courses = filter_res.filtered_courses
+  # Assert Length should in [0, 10]
+  assert len(courses) <= 10, "Result length is out of expected range"
+
+  if courses:
+    logger.info(f"Example result: {courses[0]}")
 
 
-def test_filter_courses():
-  """Main test function that runs all individual tests."""
-  logger.info("=" * 60)
-  logger.info("Starting filter_courses test suite")
-  logger.info("=" * 60)
+@pytest.mark.asyncio
+async def test_pagination():
+  """Test pagination functionality.
+  Search top 20 and at once then search [0, 10) and [10, 20). Assert the results are the same.
+  """
+  logger.info("Starting test: Pagination")
 
-  # Run all tests
-  test_filter_by_course_name()
-  logger.info("-" * 50)
+  # First, filter top 20 courses
+  all_results = await filter_courses(CourseFilter(start_idx=0, size=20))
+  all_courses = all_results.filtered_courses
+  logger.info(f"Total results count: {len(all_courses)}")
 
-  test_filter_by_weekday()
-  logger.info("-" * 50)
+  # Paginate results
+  first_page_res = await filter_courses(CourseFilter(start_idx=0, size=10))
+  first_page = first_page_res.filtered_courses
+  second_page_res = await filter_courses(CourseFilter(start_idx=10, size=10))
+  second_page = second_page_res.filtered_courses
 
-  test_filter_multiple_criteria()
-  logger.info("-" * 50)
+  # assert content of first and second page
+  assert all_courses[:10] == first_page, "First page results do not match"
+  assert all_courses[10:20] == second_page, "Second page results do not match"
 
-  test_filter_empty()
-  logger.info("-" * 50)
-
-  logger.info("Test suite completed")
+  logger.info("Pagination test passed")
 
 
-if __name__ == "__main__":
-  test_filter_courses()
+@pytest.mark.asyncio
+async def test_preference_filter():
+  """Test filtering with preference."""
+  logger.info("Starting test: Preference filter")
+
+  filter = CourseFilter(
+    grade=[2022],
+    preference="我想选一门数学课",
+    start_idx=0,
+    size=10,
+  )
+
+  filter_res = await filter_courses(filter)
+  courses = filter_res.filtered_courses
+  logger.info(f"Results count: {len(courses)} out of {filter_res.total} total courses")
+  if courses:
+    logger.info(f"Example result: {courses[0]}")
+  else:
+    logger.info("No results found for preference filter")
+
+
+@pytest.mark.asyncio
+async def test_preference_pagination():
+  """Test preference filter with pagination.
+  The inconsistency of the results is introduced by ANN search, so we need
+  """
+  logger.info("Starting test: Preference filter with pagination")
+
+  # First, filter top 20 courses with preference
+  all_results = await filter_courses(
+    CourseFilter(preference="我想选一门数学课", start_idx=0, size=20)
+  )
+  all_courses = all_results.filtered_courses
+  logger.info(f"Total results count: {len(all_courses)}")
+
+  # Paginate results
+  first_page_res = await filter_courses(
+    CourseFilter(preference="我想选一门数学课", start_idx=0, size=10)
+  )
+  first_page = first_page_res.filtered_courses
+  second_page_res = await filter_courses(
+    CourseFilter(preference="我想选一门数学课", start_idx=10, size=10)
+  )
+  second_page = second_page_res.filtered_courses
+
+  # assert content of first and second page
+  assert all_courses[:10] == first_page, "First page results do not match"
+  assert all_courses[10:20] == second_page, "Second page results do not match"
+
+  logger.info("Preference pagination test passed")

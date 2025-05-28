@@ -21,7 +21,7 @@ class CourseFilter(BaseModel):
     None  # Array of 2 integers representing the range of credits (e.g., [2, 4] for 2 to 4 credits)
   )
   preference: str | None = None
-  start_ind: int
+  start_idx: int
   size: int
 
 

@@ -5,9 +5,9 @@ from campus_rag.impl.course_scheduler.show_info import (
   list_grades,
   list_types,
 )
-from campus_rag.impl.course_scheduler.filter import filter_courses
+from campus_rag.impl.course_scheduler.filter import filter_courses, 
 from campus_rag.domain.course.po import CourseFilter
-from campus_rag.domain.course.vo import CourseView
+from campus_rag.domain.course.vo import CourseView, FilterResult
 
 router = APIRouter()
 
@@ -51,10 +51,10 @@ def get_types() -> list[str]:
   return list_types()
 
 
-@router.post("/course/filter", response_model=list[CourseView])
-def get_filtered_courses(filter: CourseFilter) -> list[CourseView]:
+@router.post("/course/filter", response_model=FilterResult)
+async def get_filtered_courses(filter: CourseFilter) -> FilterResult:
   """Returns a list of filtered courses."""
-  return filter_courses(filter)
+  return await filter_courses(filter)
 
 
 @router.post("/course/genplan", response_model=list[CourseView])

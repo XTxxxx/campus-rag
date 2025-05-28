@@ -1,0 +1,1 @@
+COURSES_MAX = 3000

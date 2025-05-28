@@ -1,3 +1,4 @@
+from unittest.mock import Base
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -56,3 +57,13 @@ class CourseView(BaseModel):
       description=construct_intro4disp(course["meta"]),
       rednblack=None,
     )
+
+
+class FilterResult(BaseModel):
+  """Model for the result of a course filter operation."""
+
+  total: int = Field(..., description="Total number of courses matching the filter")
+  filtered_courses: list[CourseView] = Field(
+    ...,
+    description="List of CourseView objects representing the filtered courses",
+  )

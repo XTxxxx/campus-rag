@@ -11,10 +11,13 @@ Arithmetic Operators: +, -, *, /, %, and ** are used for calculations involving 
 Logical Operators: AND, OR, and NOT combine multiple conditions into complex expressions.
 """
 
-import campus_rag.infra.milvus.course_ops as course_searcher
+from campus_rag.constants.course import COURSES_MAX
 from campus_rag.constants.milvus import COURSES_COLLECTION_NAME
 from campus_rag.domain.course.po import CourseFilter, TimeItem
-from campus_rag.domain.course.vo import CourseView
+from campus_rag.domain.course.vo import CourseView, FilterResult
+from campus_rag.domain.rag.po import SearchConfig
+from campus_rag.infra.milvus.hybrid_retrieve import HybridRetriever
+from campus_rag.infra.milvus.init import campus_rag_mc
 import logging
 
 logger = logging.getLogger(__name__)
@@ -250,13 +253,50 @@ def gen_filter_expr(filter: CourseFilter) -> str:
   return " AND ".join(exprs) if exprs else None
 
 
-def filter_courses(filter: CourseFilter) -> list[CourseView]:
+filter_retriever = HybridRetriever(campus_rag_mc, COURSES_COLLECTION_NAME)
+
+
+def cal_total(filter_expr: str) -> int:
+  """Calculates the total number of courses matching the filter expression."""
+  if not filter_expr:
+    return 0
+
+  res = campus_rag_mc.query(
+    COURSES_COLLECTION_NAME,
+    filter_expr,
+    ["id"],
+    limit=COURSES_MAX,
+  )
+  return len(res)
+
+
+async def filter_courses(filter: CourseFilter) -> FilterResult:
   """Filters courses based on the provided filter criteria."""
   expr = gen_filter_expr(filter)
   logger.debug(f"Generated filter expression: {expr}")
+  total = cal_total(expr)
 
-  search_results = course_searcher.select_diy(
-    COURSES_COLLECTION_NAME, expr, ["id", "meta"], limit=3000
+  if filter.preference:  # Perform hybrid search if preference is set
+    search_config = SearchConfig(
+      filter_expr=expr, limit=filter.size, offset=filter.start_idx
+    )
+    search_res = await filter_retriever.retrieve(
+      filter.preference, config=search_config
+    )
+    logger.debug(f"Hybrid search results count: {len(search_res)}")
+    course_view_list = [CourseView.from_filter_result(data) for data in search_res]
+    return FilterResult(
+      filtered_courses=course_view_list,
+      total=total,
+    )
+
+  search_results = campus_rag_mc.query(
+    COURSES_COLLECTION_NAME,
+    expr,
+    ["id", "meta"],
+    limit=filter.size,
+    offset=filter.start_idx,
   )
   logger.debug(f"Search results count: {len(search_results)}")
-  return [CourseView.from_filter_result(data) for data in search_results]
+  course_view_list = [CourseView.from_filter_result(data) for data in search_results]
+  return FilterResult(filtered_courses=course_view_list, total=total)

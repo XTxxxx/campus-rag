@@ -56,6 +56,7 @@ class HybridRetriever:
       ranker=rerank,
       limit=limit,
       output_fields=config.output_fields,
+      offset=config.offset,
     )[0]
     return res
 

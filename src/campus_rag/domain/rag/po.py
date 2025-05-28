@@ -78,11 +78,15 @@ class SearchConfig:
     sparse_weight=0.67,
     dense_weight=0.33,
     limit=25,
+    offset=None,
     filter_expr=None,
-    output_fields=["*"],
+    output_fields=None,
   ):
+    if output_fields is None:
+      output_fields = ["*"]
     self.sparse_weight = sparse_weight
     self.dense_weight = dense_weight
     self.limit = limit
     self.filter_expr = filter_expr
     self.output_fields = output_fields
+    self.offset = offset
