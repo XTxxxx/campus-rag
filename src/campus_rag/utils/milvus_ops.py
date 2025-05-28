@@ -6,11 +6,6 @@ from pymilvus import MilvusClient, DataType, connections, Collection, AnnSearchR
 from src.campus_rag.utils.const import *
 
 client = MilvusClient(uri=MILVUS_URI)
-connections.connect(
-  alias="default",
-  host="localhost",
-  port="19530"
-)
 
 _types = {
   "eq": "==",
