@@ -1,37 +1,45 @@
 import logging
 
+logger = logging.getLogger()
 
-def configure_logger(level: str = "INFO"):
+
+def remove_other_loggers():
   """
-  Configure the logger for the application.
-  :param level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  Remove all other loggers except the ones starting with "rag".
   """
-  level_dict = {
-    "debug": logging.DEBUG,
-    "info": logging.INFO,
-    "warning": logging.WARNING,
-    "error": logging.ERROR,
-    "critical": logging.CRITICAL,
+  for lib in logging.root.manager.loggerDict:
+    if not lib.startswith("campus_rag") and not lib.startswith("src.campus_rag"):
+      logging.getLogger(lib).setLevel(logging.WARNING)
+
+remove_other_loggers()
+
+
+
+class ColoredFormatter(logging.Formatter):
+  """
+  Custom formatter to add colors to log messages.
+  """
+
+  COLORS = {
+    "DEBUG": "\033[94m",  # Blue
+    "INFO": "\033[92m",  # Green
+    "WARNING": "\033[93m",  # Yellow
+    "ERROR": "\033[91m",  # Red
+    "CRITICAL": "\033[95m",  # Magenta
   }
+  RESET = "\033[0m"  # Reset color
 
-  log_level = level_dict.get(level.lower(), logging.INFO)
+  def format(self, record):
+    log_color = self.COLORS.get(record.levelname, self.RESET)  # Default color
+    message = super().format(record)
+    return f"{log_color}{message}{self.RESET}"  # Reset color at the end
 
-  logging.basicConfig(
-    level=log_level,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%H:%M:%S",
-  )
 
-  # if not logger.handlers:
-  # logger.setLevel(log_level)
-
-  # console_handler = logging.StreamHandler()
-  # console_handler.setLevel(log_level)
-  # formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
-  # console_handler.setFormatter(formatter)
-
-  # logger.addHandler(console_handler)
-
-  # file_handler = logging.FileHandler("app.log")
-  # file_handler.setFormatter(formatter)
-  # logger.addHandler(file_handler)
+remove_other_loggers()
+log_level = logging.DEBUG
+logger.setLevel(log_level)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(log_level)
+formatter = ColoredFormatter("%(asctime)s - %(levelname)s - %(message)s")
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
