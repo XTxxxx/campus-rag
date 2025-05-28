@@ -73,7 +73,7 @@ class ConverstaionPipeline:
       question=enhanced_query,
       config=SearchConfig(
         limit=self.limit,
-        output_fields=["chunk", "meta", "embedding", "sparse_embedding"],
+        output_fields=["chunk", "meta", "context", "source"],
       ),
     )
 

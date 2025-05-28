@@ -10,14 +10,16 @@ import redis
 from openai import OpenAI, AsyncOpenAI
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
-from typing import TypedDict, Generator
+from typing import TypedDict, AsyncGenerator
 
 _ALI_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-redis_client = redis.Redis(host="localhost", port=6379, db=0)
+redis_client = redis.Redis(
+  host="localhost", port=6379, password="123456", decode_responses=True
+)
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 _llm_name = "qwen-max-2025-01-25"
-_llm_key = os.getenv("QWEN_API_KEY")
+_llm_key = os.getenv("LCX_QWEN_API_KEY")
 _llm_bare = OpenAI(base_url=_ALI_URL, api_key=_llm_key)
 
 _llm_bare_async = AsyncOpenAI(base_url=_ALI_URL, api_key=_llm_key)
@@ -48,7 +50,7 @@ def llm_chat(prompts: Prompts) -> str:
 
   if cached_response:
     logging.info("LLM cache hit")
-    return cached_response.decode("utf-8")
+    return cached_response
 
   retries = 3
   tries = 0
@@ -74,11 +76,18 @@ def llm_chat(prompts: Prompts) -> str:
 
 
 async def llm_chat_async(prompts: Prompts) -> str:
+  cache_key = get_cache_key(prompts)
+  cached_response = redis_client.get(cache_key)
+
+  if cached_response:
+    logging.info("LLM cache hit (async)")
+    return cached_response
+
   retries = 3
   tries = 0
   while tries < retries:
     try:
-      return (
+      res = (
         (
           await _llm_bare_async.chat.completions.create(
             model=_llm_name,
@@ -88,6 +97,8 @@ async def llm_chat_async(prompts: Prompts) -> str:
         .choices[0]
         .message.content.strip()
       )
+      redis_client.set(cache_key, res, ex=60 * 60 * 24)  # cache for 1 day
+      return res
     except Exception as e:
       logging.error(f"Errors occurred: {e}")
       retries -= 1
@@ -97,32 +108,71 @@ async def llm_chat_async(prompts: Prompts) -> str:
         )
 
 
-def llm_chat_stream(prompts: Prompts) -> Generator:
+async def allm_chat_stream(prompts: Prompts) -> AsyncGenerator:
+  cache_key = get_cache_key(prompts)
+  cached_response = redis_client.get(cache_key)
+
+  if cached_response:
+    logging.info("LLM cache hit (stream)")
+    yield cached_response
+    return
+
   retries = 3
   tries = 0
   while tries < retries:
     try:
-      return _llm_bare.chat.completions.create(
+      stream = await _llm_bare_async.chat.completions.create(
         model=_llm_name,
         messages=prompts,
         stream=True,
       )
+      full_response = []
+      # Process the stream while collecting the full response
+      async for chunk in stream:
+        content = chunk.choices[0].delta.content
+        if content is not None:
+          full_response.append(content)
+        yield content
+      full_response_str = "".join(full_response).strip()
+      redis_client.set(cache_key, full_response_str, ex=60 * 60 * 24)  # cache for 1 day
+      return
     except Exception as e:
       logging.error(f"Errors occurred: {e}")
-      retries -= 1
-      if retries == 0:
+      tries += 1
+      if tries == retries:
         raise RuntimeError(
           f"Failed to get response from Qwen API after {retries} retries"
         )
 
 
 def structure_llm_chat(prompts, model: BaseModel):
+  cache_key = get_cache_key(prompts)
+  cached_response = redis_client.get(cache_key)
+
+  if cached_response:
+    logging.info("LLM cache hit (structured)")
+    # Deserialize the cached structured response
+    try:
+      return model(**json.loads(cached_response))
+    except Exception as e:
+      logging.error(f"Failed to deserialize cached structured response: {e}")
+      # Continue with the API call if deserialization fails
+
   llm_strcture = _llm_langchain.with_structured_output(model)
   retries = 3
   tries = 0
   while tries < retries:
     try:
-      return llm_strcture.invoke(prompts)
+      result = llm_strcture.invoke(prompts)
+      # Cache the structured result
+      try:
+        serialized_result = json.dumps(result.dict())
+        redis_client.set(
+          cache_key, serialized_result, ex=60 * 60 * 24
+        )  # cache for 1 day
+      except Exception as e:
+        logging.error(f"Failed to cache structured response: {e}")
+      return result
     except Exception as e:
       logging.error(f"Errors occurred: {e}")
       retries -= 1

@@ -40,8 +40,8 @@ async def run_pipeline_and_queue_results(task_id: str, query: str, history: list
   await add_message_to_conversation(
     user_id,
     conversation_id,
-    content = final_answer,
-    role = "assistant",
+    content=final_answer,
+    role="assistant",
     metainfo=metainfo,
   )
 
