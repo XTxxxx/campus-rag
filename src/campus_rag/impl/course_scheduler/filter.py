@@ -13,7 +13,7 @@ Logical Operators: AND, OR, and NOT combine multiple conditions into complex exp
 
 from campus_rag.constants.course import COURSES_MAX
 from campus_rag.constants.milvus import COURSES_COLLECTION_NAME
-from campus_rag.domain.course.po import CourseFilter, TimeItem
+from campus_rag.domain.course.po import CourseFilter, FilterArgs, TimeItem
 from campus_rag.domain.course.vo import CourseView, FilterResult
 from campus_rag.domain.rag.po import SearchConfig
 from campus_rag.infra.milvus.hybrid_retrieve import HybridRetriever
@@ -270,18 +270,22 @@ def cal_total(filter_expr: str) -> int:
   return len(res)
 
 
-async def filter_courses(filter: CourseFilter) -> FilterResult:
+async def filter_courses(filter_arg: FilterArgs) -> FilterResult:
   """Filters courses based on the provided filter criteria."""
-  expr = gen_filter_expr(filter)
+  course_filter = filter_arg.filter
+  expr = gen_filter_expr(course_filter)
   logger.debug(f"Generated filter expression: {expr}")
   total = cal_total(expr)
 
-  if filter.preference:  # Perform hybrid search if preference is set
+  if course_filter.preference:  # Perform hybrid search if preference is set
     search_config = SearchConfig(
-      filter_expr=expr, limit=filter.size, offset=filter.start_idx
+      filter_expr=expr,
+      limit=filter_arg.size,
+      offset=filter_arg.start_idx,
+      output_fields=["id", "meta", "distance"],
     )
     search_res = await filter_retriever.retrieve(
-      filter.preference, config=search_config
+      course_filter.preference, config=search_config
     )
     logger.debug(f"Hybrid search results count: {len(search_res)}")
     course_view_list = [CourseView.from_filter_result(data) for data in search_res]
@@ -294,8 +298,8 @@ async def filter_courses(filter: CourseFilter) -> FilterResult:
     COURSES_COLLECTION_NAME,
     expr,
     ["id", "meta"],
-    limit=filter.size,
-    offset=filter.start_idx,
+    limit=filter_arg.size,
+    offset=filter_arg.start_idx,
   )
   logger.debug(f"Search results count: {len(search_results)}")
   course_view_list = [CourseView.from_filter_result(data) for data in search_results]

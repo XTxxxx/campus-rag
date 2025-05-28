@@ -26,6 +26,9 @@ class CourseView(BaseModel):
   rednblack: Optional[str] = Field(
     description="Red and Black table representation of the course",
   )
+  distance: Optional[float] = Field(
+    description="Distance for vector if use preference search, otherwise None",
+  )
 
   @classmethod
   def from_filter_result(cls, course: dict) -> "CourseView":
@@ -45,6 +48,10 @@ class CourseView(BaseModel):
     else:
       time_list = []
 
+    distance = None
+    if "distance" in course:
+      distance = course["distance"]
+
     return CourseView(
       id=course["id"],
       course_number=course["meta"]["course_number"],
@@ -56,6 +63,7 @@ class CourseView(BaseModel):
       time=time_list,
       description=construct_intro4disp(course["meta"]),
       rednblack=None,
+      distance=distance,
     )
 
 
@@ -66,4 +74,17 @@ class FilterResult(BaseModel):
   filtered_courses: list[CourseView] = Field(
     ...,
     description="List of CourseView objects representing the filtered courses",
+  )
+
+
+class PlanView(BaseModel):
+  """Model for a course plan view."""
+
+  description: str = Field(
+    description="Description of the course plan, if available",
+  )
+
+  courses: list[CourseView] = Field(
+    ...,
+    description="List of CourseView objects representing the courses in the plan",
   )

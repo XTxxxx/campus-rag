@@ -5,9 +5,10 @@ from campus_rag.impl.course_scheduler.show_info import (
   list_grades,
   list_types,
 )
-from campus_rag.impl.course_scheduler.filter import filter_courses, 
-from campus_rag.domain.course.po import CourseFilter
-from campus_rag.domain.course.vo import CourseView, FilterResult
+from campus_rag.impl.course_scheduler.filter import filter_courses
+from campus_rag.domain.course.po import CourseFilter, FilterArgs
+from campus_rag.domain.course.vo import CourseView, FilterResult, PlanView
+from campus_rag.impl.course_scheduler.schedule import generate_schedule
 
 router = APIRouter()
 
@@ -52,15 +53,14 @@ def get_types() -> list[str]:
 
 
 @router.post("/course/filter", response_model=FilterResult)
-async def get_filtered_courses(filter: CourseFilter) -> FilterResult:
+async def get_filtered_courses(filter: FilterArgs) -> FilterResult:
   """Returns a list of filtered courses."""
   return await filter_courses(filter)
 
 
 @router.post("/course/genplan", response_model=list[CourseView])
-def generate_course_plan(current: CourseView, filterlists: list[CourseFilter]):
+async def generate_course_plan(
+  current: list[CourseView], filter_list: list[CourseFilter], constraint: str
+) -> list[PlanView]:
   """Generates a course plan based on the current course and filter criteria."""
-  # This function should implement the logic to generate a course plan
-  # based on the current course and the provided filter criteria.
-  # For now, it returns an empty list as a placeholder.
-  return []  # Placeholder for actual implementation
+  return await generate_schedule(current, filter_list, constraint)
