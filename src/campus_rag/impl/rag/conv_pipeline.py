@@ -1,13 +1,13 @@
 from pymilvus import MilvusClient
 from fastapi.concurrency import run_in_threadpool
-from typing import AsyncGenerator, Callable
+from typing import AsyncGenerator
 import asyncio
 import logging
 
 from campus_rag.constants.prompt import SYSTEM_PROMPT
 from campus_rag.impl.rag.llm_tool.enhance_query import enhance_query
 from campus_rag.impl.rag.llm_tool.reflect import reflect_query, ReflectionCategory
-from campus_rag.impl.rag.hybrid_retrieve import HybridRetriever
+from campus_rag.infra.milvus.hybrid_retrieve import HybridRetriever
 from campus_rag.infra.reranker import reranker
 from campus_rag.impl.rag.generate import generate_answer
 from campus_rag.constants.milvus import COLLECTION_NAME, MILVUS_URI
@@ -16,7 +16,7 @@ from campus_rag.constants.conversation import (
   CONTEXT_PREFIX,
   ANSWER_PREFIX,
 )
-from campus_rag.domain.rag.po import ChatMessage
+from campus_rag.domain.rag.po import ChatMessage, SearchConfig
 
 _KEYWORDS_PATH = "./data/keywords.json"
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ class ConverstaionPipeline:
   def __init__(self):
     self.enhance_query = enhance_query
     self.mc = MilvusClient(uri=MILVUS_URI)
-    self.hybrid_retriever = HybridRetriever(mc=self.mc)
+    self.hybrid_retriever = HybridRetriever(mc=self.mc, collection_name=COLLECTION_NAME)
     self.collection_name = COLLECTION_NAME
     self.reranker = reranker
     self.async_generator = generate_answer
@@ -71,6 +71,10 @@ class ConverstaionPipeline:
     # Retrieve the results
     results = await self.hybrid_retriever.retrieve(
       question=enhanced_query,
+      config=SearchConfig(
+        limit=self.limit,
+        output_fields=["chunk", "meta", "embedding", "sparse_embedding"],
+      ),
     )
 
     async for chunk in _yield_wrapper(
@@ -99,7 +103,9 @@ class ConverstaionPipeline:
       yield chunk
 
     # Reflect, detail see definition of ReflectionCategory
-    reflection_result = await reflect_query(query, extracted_topk_results, SYSTEM_PROMPT)
+    reflection_result = await reflect_query(
+      query, extracted_topk_results, SYSTEM_PROMPT
+    )
 
     async for chunk in _yield_wrapper(
       f"Reflection result: {reflection_result}",

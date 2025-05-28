@@ -4,9 +4,9 @@ from pymilvus import (
   WeightedRanker,
 )
 from typing import List
-from campus_rag.constants.milvus import COLLECTION_NAME
 from campus_rag.infra.embedding import embedding_model, sparse_embedding_model
 from fastapi.concurrency import run_in_threadpool
+from campus_rag.domain.rag.po import SearchConfig
 
 
 class HybridRetriever:
@@ -14,23 +14,23 @@ class HybridRetriever:
   TODO: Finetune sparse / dense weights for better performance.
   """
 
-  def hybrid_search(
+  def __init__(self, mc: MilvusClient, collection_name: str, is_test=False):
+    self.mc = mc
+    self.collection_name = collection_name
+    self.is_test = is_test
+
+  def _hybrid_search(
     self,
-    col: str,
     query: str,
-    sources: str,
-    limit: int,
-    config,
+    config: SearchConfig,
   ) -> List[dict]:
-    sparse_weight = config["sparse_weight"]
-    dense_weight = config["dense_weight"]
-    do_title_filter = config["do_title_filter"]
+    sparse_weight = config.sparse_weight
+    dense_weight = config.dense_weight
     query_dense_embedding = embedding_model.encode(query, normalize_embeddings=True)
     query_sparse_embedding = sparse_embedding_model([query])["sparse"][[0]]
     dense_search_params = {"metric_type": "IP", "params": {}}
-    expr = None
-    if do_title_filter and sources:
-      expr = f"source in {sources}"
+    expr = config.filter_expr
+    limit = config.limit
     # Dense vector for semantic search
     dense_req = AnnSearchRequest(
       [query_dense_embedding],
@@ -51,41 +51,25 @@ class HybridRetriever:
     req_list = [sparse_req, dense_req]
     rerank = WeightedRanker(sparse_weight, dense_weight)
     res = self.mc.hybrid_search(
-      col,
+      self.collection_name,
       req_list,
       ranker=rerank,
       limit=limit,
-      output_fields=[
-        "source",
-        "chunk",
-        "cleaned_chunk",
-        "context",
-      ],
+      output_fields=config.output_fields,
     )[0]
     return res
 
-  def __init__(self, mc: MilvusClient, is_test=False):
-    self.mc = mc
-    self.is_test = is_test
-    self.config = {
-      "sparse_weight": 1.0,
-      "dense_weight": 0.5,
-      "do_title_filter": True,
-    }
-    self.without_filter_config = {
-      "sparse_weight": 1.0,
-      "dense_weight": 0.5,
-      "do_title_filter": False,
-    }
-
-  async def retrieve(self, question, limit=25, sources=None, col=COLLECTION_NAME):
+  async def retrieve(self, question: str, config: SearchConfig) -> List[dict]:
     # Search with filters
-    hybrid_results = await run_in_threadpool(
-      self.hybrid_search, col, question, sources, limit, self.config
-    )
-    # If no results found, search without filters
-    if len(hybrid_results) == 0:
-      hybrid_results = await run_in_threadpool(
-        self.hybrid_search, col, question, sources, limit, self.without_filter_config
-      )
+    hybrid_results = await run_in_threadpool(self._hybrid_search, question, config)
+    # Delete the embedding and sparse_embedding fields from the results
+    for result in hybrid_results:
+      if "embedding" in result:
+        del result["embedding"]
+      if "embedding" in result["entity"]:
+        del result["entity"]["embedding"]
+      if "sparse_embedding" in result:
+        del result["sparse_embedding"]
+      if "sparse_embedding" in result["entity"]:
+        del result["entity"]["sparse_embedding"]
     return hybrid_results

@@ -8,9 +8,11 @@ import time
 
 """SQLModel is also a Pydantic model, so we can use it directly for our domain objects."""
 
+
 def uuid_str():
   """Generates a UUID4 string."""
   return str(uuid.uuid4())
+
 
 class Conversation(SQLModel, table=True):
   conversation_id: str = Field(
@@ -29,9 +31,7 @@ class Conversation(SQLModel, table=True):
 
 
 class ChatMessage(SQLModel, table=True):
-  message_id: str = Field(
-    default_factory=uuid_str, primary_key=True, nullable=False
-  )
+  message_id: str = Field(default_factory=uuid_str, primary_key=True, nullable=False)
   conversation_id: str = Field(
     foreign_key="conversation.conversation_id", index=True, nullable=False
   )
@@ -70,3 +70,19 @@ class Query(BaseModel):
   user_id: str
   conversation_id: str
   query: str
+
+
+class SearchConfig:
+  def __init__(
+    self,
+    sparse_weight=0.67,
+    dense_weight=0.33,
+    limit=25,
+    filter_expr=None,
+    output_fields=["*"],
+  ):
+    self.sparse_weight = sparse_weight
+    self.dense_weight = dense_weight
+    self.limit = limit
+    self.filter_expr = filter_expr
+    self.output_fields = output_fields

@@ -261,41 +261,6 @@ def flat_weekday():
     json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-@app.command()
-def check():
-  """
-  Check the course list for field specification.
-  """
-  with open(LIST_PATH, "r", encoding="utf-8") as f:
-    data = json.load(f)
-  # 1. Not null: course_name, course_number, department_name, campus, time_place, credit
-  for course in data:
-    if not course.get("course_name"):
-      print(f"Missing course_name in {course}")
-    if not course.get("course_number"):
-      print(f"Missing course_number in {course}")
-    if not course.get("department_name"):
-      print(f"Missing department_name in {course}")
-    if not course.get("campus"):
-      print(f"Missing campus in {course}")
-    if "credit" not in course or not isinstance(course["credit"], (int, float)):
-      print(f"Missing or invalid credit in {course}")
-
-  # 2. if time_place is not empty, it should have time, time should have weekday, start_at, end_at
-  for course in data:
-    if "time_place" not in course or not course["time_place"]:
-      continue
-    for time_place in course["time_place"]:
-      if "time" not in time_place:
-        print(f"Missing time in {course}")
-        continue
-      if "day_in_week" not in time_place["time"]:
-        print(f"Missing day_in_week in {course}")
-      if "begin_at" not in time_place["time"]:
-        print(f"Missing begin_at in {course}")
-      if "end_at" not in time_place["time"]:
-        print(f"Missing end_at in {course}")
-
 
 if __name__ == "__main__":
   app()
