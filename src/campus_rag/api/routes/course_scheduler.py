@@ -1,13 +1,13 @@
 from fastapi.routing import APIRouter
-from campus_rag.impl.course_scheduler import (
-  CourseFilter,
-  CoursePlan,
+from campus_rag.impl.course_scheduler.show_info import (
   list_departments,
   list_campuses,
   list_grades,
   list_types,
-  filter_courses,
 )
+from campus_rag.impl.course_scheduler.filter import filter_courses
+from campus_rag.domain.course.po import CourseFilter
+from campus_rag.domain.course.vo import CourseView
 
 router = APIRouter()
 
@@ -51,14 +51,14 @@ def get_types() -> list[str]:
   return list_types()
 
 
-@router.get("/course/filter", response_model=list[dict])
-def get_filtered_courses(filter: CourseFilter) -> list[dict]:
+@router.post("/course/filter", response_model=list[CourseView])
+def get_filtered_courses(filter: CourseFilter) -> list[CourseView]:
   """Returns a list of filtered courses."""
   return filter_courses(filter)
 
 
-@router.post("/course/genplan", response_model=list[CoursePlan])
-def generate_course_plan(current: CoursePlan, filterlist: CourseFilter):
+@router.post("/course/genplan", response_model=list[CourseView])
+def generate_course_plan(current: CourseView, filterlists: list[CourseFilter]):
   """Generates a course plan based on the current course and filter criteria."""
   # This function should implement the logic to generate a course plan
   # based on the current course and the provided filter criteria.

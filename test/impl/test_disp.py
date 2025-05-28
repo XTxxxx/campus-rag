@@ -1,8 +1,7 @@
-from campus_rag.impl.course_scheduler import (
+from campus_rag.impl.course_scheduler.show_info import (
   list_campuses,
   list_grades,
   list_departments,
-  list_something,
   list_types,
 )
 import campus_rag.infra.milvus.course_ops as course_searcher

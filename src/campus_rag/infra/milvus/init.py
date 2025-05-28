@@ -22,6 +22,7 @@ from campus_rag.constants.milvus import (
   MILVUS_URI,
   COLLECTION_NAME,
   COURSES_COLLECTION_NAME,
+  INSERT_BATCH_SIZE,
 )
 from ..embedding import embedding_model, sparse_embedding_model
 
@@ -128,17 +129,29 @@ def insert_course_data(mc: MilvusClient):
   data_path = os.path.join(_DATA_ROOT, "course_list.json")
   with open(data_path, "r", encoding="utf-8") as f:
     data = json.load(f)
-  for chunk in tqdm(data):
-    embedding_key = construct_embedding_key_for_course(chunk)
+  for batch_idx in tqdm(
+    range(0, len(data), INSERT_BATCH_SIZE), desc="batch inserting courses"
+  ):
+    # Every batch embedding and insert together
+    batch = data[batch_idx : batch_idx + INSERT_BATCH_SIZE]
+    embedding_keys = [construct_embedding_key_for_course(chunk) for chunk in batch]
+    embeddings = embedding_model.encode(embedding_keys)
+    sparse_embeddings = sparse_embedding_model(embedding_keys)["sparse"]
+    meta = [construct_meta_for_course(chunk) for chunk in batch]
+    to_insert = [
+      {
+        "embedding": embeddings[i],
+        "sparse_embedding": sparse_embeddings[i : i + 1],
+        "chunk": embedding_keys[i],
+        "meta": meta[i],
+      }
+      for i in range(len(batch))
+    ]
     mc.insert(
       collection_name=COURSES_COLLECTION_NAME,
-      data={
-        "embedding": embedding_model.encode(embedding_key),
-        "sparse_embedding": sparse_embedding_model([embedding_key])["sparse"],
-        "chunk": embedding_key,
-        "meta": construct_meta_for_course(chunk),
-      },
+      data=to_insert,
     )
+
   logger.info("Successfully inserted course data into Milvus")
 
 
