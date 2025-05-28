@@ -2,10 +2,15 @@
 support operations for milvus, e.g. select by keywords
 """
 
-from pymilvus import MilvusClient, DataType
+from pymilvus import MilvusClient, DataType, connections, Collection, AnnSearchRequest, WeightedRanker
 from src.campus_rag.utils.const import *
 
 client = MilvusClient(uri=MILVUS_URI)
+connections.connect(
+  alias="default",
+  host="localhost",
+  port="19530"
+)
 
 _types = {
   "eq": "==",
@@ -88,6 +93,30 @@ def select_all(limit: int) -> list[dict]:
   )
 
 
+def _construct_filter_expr(_type: str, parent_key: str=None, inner_keys: list[list[str]]=None, values: list=None, **kwargs):
+  condition = ""
+  if parent_key and inner_keys and inner_keys:
+    if len(inner_keys) != len(values):
+      raise ValueError("inner_keys and values must have the same length")
+    for i, (inner_key, value) in enumerate(zip(inner_keys, values)):
+      condition += f"{parent_key}"
+      for key in inner_key:
+        key = f'"{key}"' if type(key) == str else key
+        condition += f"[{key}]"
+      value = f'"{value}"' if type(value) == str else value
+      condition += f" {_types[_type]} {value}"
+      if i != len(inner_keys) - 1:
+        condition += f" AND "  # add && restriction
+  # considering other possibly existing restriction
+  for key, value in kwargs.items():
+    value = f'"{value}"' if type(value) == str else value
+    if condition == "":  # avoid special condition, e.g. inner_keys=[](empty list)
+      condition = f"{key} {_types[_type]} {value}"
+    else:
+      condition += f" AND {key} {_types[_type]} {value}"
+  return condition
+
+
 def select_from_inner_datas(
   collection_name: str,
   output_fields: list[str],
@@ -115,25 +144,7 @@ def select_from_inner_datas(
   inner_keys=[["time", "weeks"]], value=["1-16周"]
   """
   try:
-    if len(inner_keys) != len(values):
-      raise ValueError("inner_keys and values must have the same length")
-    condition = ""
-    for i, (inner_key, value) in enumerate(zip(inner_keys, values)):
-      condition += f"{parent_key}"
-      for key in inner_key:
-        key = f'"{key}"' if type(key) == str else key
-        condition += f"[{key}]"
-      value = f'"{value}"' if type(value) == str else value
-      condition += f" {_types[_type]} {value}"
-      if i != len(inner_keys) - 1:
-        condition += f" AND "  # add && restriction
-    # considering other possibly existing restriction
-    for key, value in kwargs.items():
-      value = f'"{value}"' if type(value) == str else value
-      if condition == "":  # avoid special condition, e.g. inner_keys=[](empty list)
-        condition = f"{key} {_types[_type]} {value}"
-      else:
-        condition += f" AND {key} {_types[_type]} {value}"
+    condition = _construct_filter_expr(_type, parent_key, inner_keys, values, **kwargs)
     result = client.query(
       collection_name=collection_name, filter=condition, output_fields=output_fields
     )
@@ -142,6 +153,39 @@ def select_from_inner_datas(
     raise e
   finally:
     return [{"msg": "Something error happened"}]
+
+
+def filter_with_embedding_select(
+        mc: MilvusClient, collection_name: str,
+        output_fields: list[str],
+        _type: str,
+        query: str, search_params: dict,
+        parent_key: str=None,
+        inner_keys: list[list[str]]=None,
+        values: list=None,
+        limit=2,
+        **kwargs,
+):
+  # embedding for query
+  query_embedding = embedding_model.encode(query, normalize_embeddings=True)
+  # query_sparse_embedding = sparse_embedding_model([query])["sparse"][[0]]
+  reranker = WeightedRanker(1)
+  condition = _construct_filter_expr(_type, parent_key, inner_keys, values, **kwargs)
+  req = AnnSearchRequest(
+    [query_embedding],
+    "embedding",
+    search_params,
+    limit=10,
+    expr=condition,
+  )
+  results = mc.hybrid_search(
+    collection_name,
+    [req],
+    limit=limit,
+    ranker=reranker,
+    output_fields=output_fields,
+  )
+  return results
 
 
 def drop_collections(mc: MilvusClient, collection_name: str):
@@ -168,22 +212,22 @@ def create_course_collection(mc: MilvusClient, collection_name: str, embedding_m
     dim=embedding_model.get_sentence_embedding_dimension(),
   )
   schema.add_field(field_name="sparse_embedding", datatype=DataType.SPARSE_FLOAT_VECTOR)
-  schema.add_field("course_name", DataType.VARCHAR, max_length=128)
-  schema.add_field("course_number", DataType.VARCHAR, max_length=128)
-  schema.add_field("teacher_name", DataType.VARCHAR, max_length=128)
-  schema.add_field("department_name", DataType.VARCHAR, max_length=128)
-  schema.add_field("campus", DataType.VARCHAR, max_length=128)
-  schema.add_field("reference_book", DataType.VARCHAR, max_length=128)
-  schema.add_field("teaching_class_id", DataType.VARCHAR, max_length=128)
+  schema.add_field("course_name", DataType.VARCHAR, max_length=1024)
+  schema.add_field("course_number", DataType.VARCHAR, max_length=1024)
+  schema.add_field("teacher_name", DataType.VARCHAR, max_length=1024)
+  schema.add_field("department_name", DataType.VARCHAR, max_length=1024)
+  schema.add_field("campus", DataType.VARCHAR, max_length=1024)
+  schema.add_field("reference_book", DataType.VARCHAR, max_length=2**15)
+  schema.add_field("teaching_class_id", DataType.VARCHAR, max_length=1024)
   schema.add_field("hours", DataType.INT16)
-  schema.add_field("school_term", DataType.VARCHAR, max_length=128)
+  schema.add_field("school_term", DataType.VARCHAR, max_length=1024)
   # time_place_field = FieldSchema(
   #   name="time_place",
   #   dtype=DataType.JSON,
   # )
   schema.add_field("time_place", DataType.JSON)
-  schema.add_field("teaching_purpose", DataType.VARCHAR, max_length=16384)
-  schema.add_field("summary", DataType.VARCHAR, max_length=16384)
+  schema.add_field("teaching_purpose", DataType.VARCHAR, max_length=65535)
+  schema.add_field("summary", DataType.VARCHAR, max_length=65535)
   schema.add_field(
     "grades",
     DataType.ARRAY,
@@ -217,18 +261,36 @@ if __name__ == "__main__":
   # create_course_collection(mc, COURSES_COLLECTION_NAME)
   # drop_collections(MilvusClient(uri=MILVUS_URI), COURSES_COLLECTION_NAME)
   # print(select_like(COURSES_COLLECTION_NAME, output_fields=["*"], course_number="06020300"))
-  print(
-    select_from_inner_datas(
-      COURSES_COLLECTION_NAME,
-      ["*"],
-      "eq",
-      "time_place",
-      inner_keys=[["time", "weeks"], ["time", "day_in_week"], ["place"]],
-      values=["1-16周", 4, "逸B-201"],
-      limit=2,
-      # department_name="法学院",
-      grades=2022  # trigger error
-    )
+  search_params = {
+    "metric_type": "IP",
+    "params": {},
+  }
+  query = """
+    事少分高
+  """
+  res = filter_with_embedding_select(
+    mc, COURSES_COLLECTION_NAME, output_fields=["*"], _type="eq",
+    query=query, search_params=search_params,
+    parent_key="time_place",
+    inner_keys=[["time", "weeks"], ["time", "day_in_week"], ["place"]],
+    values=["1-16周", 4, "逸B-201"],
+    limit=2,
+    department_name="法学院",
+    grades=[2022],
   )
+  print(res[:2])
+  # print(
+  #   select_from_inner_datas(
+  #     COURSES_COLLECTION_NAME,
+  #     ["*"],
+  #     "eq",
+  #     "time_place",
+  #     inner_keys=[["time", "weeks"], ["time", "day_in_week"], ["place"]],
+  #     values=["1-16周", 4, "逸B-201"],
+  #     limit=2,
+  #     # department_name="法学院",
+  #     grades=2022  # trigger error
+  #   )
+  # )
   # print(select_eq(output_fields=["*"], course_number="06020300"))
   # print(select_all(limit=16000))
