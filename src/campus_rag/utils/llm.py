@@ -6,20 +6,18 @@ import hashlib
 import json
 import os
 import logging
-import redis
 from openai import OpenAI, AsyncOpenAI
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
-from typing import TypedDict, Generator
+from typing import TypedDict, AsyncGenerator
+from campus_rag.infra.redis import redis_client
 
 _ALI_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-redis_client = redis.Redis(
-  host="localhost", port=6379, password="123456", decode_responses=True
-)
 
-logging.basicConfig(level=logging.DEBUG)
+
+logger = logging.getLogger(__name__)
 _llm_name = "qwen-max-2025-01-25"
-_llm_key = os.getenv("QWEN_API_KEY")
+_llm_key = os.getenv("LCX_QWEN_API_KEY")
 _llm_bare = OpenAI(base_url=_ALI_URL, api_key=_llm_key)
 
 _llm_bare_async = AsyncOpenAI(base_url=_ALI_URL, api_key=_llm_key)
@@ -108,56 +106,38 @@ async def llm_chat_async(prompts: Prompts) -> str:
         )
 
 
-def llm_chat_stream(prompts: Prompts) -> Generator:
+async def llm_chat_astream(prompts: Prompts) -> AsyncGenerator:
   cache_key = get_cache_key(prompts)
   cached_response = redis_client.get(cache_key)
 
   if cached_response:
     logging.info("LLM cache hit (stream)")
-
-    # For streaming, yield the cached response as a single chunk
-    class FakeStreamItem:
-      def __init__(self, content):
-        self.choices = [
-          type(
-            "obj", (object,), {"delta": type("obj", (object,), {"content": content})}
-          )
-        ]
-
-    yield FakeStreamItem(cached_response)
+    yield cached_response
     return
 
   retries = 3
   tries = 0
   while tries < retries:
     try:
-      # Create a collector for the full response
-      full_response = []
-
-      # Get the stream
-      stream = _llm_bare.chat.completions.create(
+      stream = await _llm_bare_async.chat.completions.create(
         model=_llm_name,
         messages=prompts,
         stream=True,
       )
-
+      full_response = []
       # Process the stream while collecting the full response
-      for chunk in stream:
-        if (
-          hasattr(chunk.choices[0].delta, "content")
-          and chunk.choices[0].delta.content is not None
-        ):
-          full_response.append(chunk.choices[0].delta.content)
-        yield chunk
-
-      # Cache the complete response
-      complete_response = "".join(full_response).strip()
-      redis_client.set(cache_key, complete_response, ex=60 * 60 * 24)  # cache for 1 day
+      async for chunk in stream:
+        content = chunk.choices[0].delta.content
+        if content is not None:
+          full_response.append(content)
+        yield content
+      full_response_str = "".join(full_response).strip()
+      redis_client.set(cache_key, full_response_str, ex=60 * 60 * 24)  # cache for 1 day
       return
     except Exception as e:
       logging.error(f"Errors occurred: {e}")
-      retries -= 1
-      if retries == 0:
+      tries += 1
+      if tries == retries:
         raise RuntimeError(
           f"Failed to get response from Qwen API after {retries} retries"
         )
@@ -198,3 +178,18 @@ def structure_llm_chat(prompts, model: BaseModel):
         raise RuntimeError(
           f"Failed to get response from Qwen API after {retries} retries"
         )
+
+
+def parse_as_json(llm_output: str) -> dict:
+  """Parse the LLM output as JSON."""
+  try:
+    return json.loads(llm_output)
+  except json.JSONDecodeError:
+    if llm_output.startswith("```json"):
+      llm_output = llm_output[7:].strip()
+    if llm_output.endswith("```"):
+      llm_output = llm_output[:-3].strip()
+    try:
+      return json.loads(llm_output)
+    except json.JSONDecodeError as e:
+      logging.error(f"Failed to parse LLM output as JSON: {e}")
