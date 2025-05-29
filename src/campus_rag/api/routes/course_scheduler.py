@@ -7,7 +7,12 @@ from campus_rag.impl.course_scheduler.show_info import (
 )
 from campus_rag.impl.course_scheduler.filter import filter_courses_pagination
 from campus_rag.domain.course.po import CourseFilter, FilterArgs
-from campus_rag.domain.course.vo import CourseView, FilterResult, PlanView
+from campus_rag.domain.course.vo import (
+  CourseView,
+  FilterResult,
+  GeneratePlanRequest,
+  PlanView,
+)
 from campus_rag.impl.course_scheduler.schedule import generate_schedule
 
 router = APIRouter()
@@ -58,9 +63,9 @@ async def get_filtered_courses(filter: FilterArgs) -> FilterResult:
   return await filter_courses_pagination(filter)
 
 
-@router.post("/course/genplan", response_model=list[CourseView])
-async def generate_course_plan(
-  current: list[CourseView], filter_list: list[CourseFilter], constraint: str
-) -> list[PlanView]:
+@router.post("/course/genplan", response_model=list[PlanView])
+async def generate_course_plan(request: GeneratePlanRequest) -> list[PlanView]:
   """Generates a course plan based on the current course and filter criteria."""
-  return await generate_schedule(current, filter_list, constraint)
+  return await generate_schedule(
+    request.current, request.filter_list, request.constraint
+  )
