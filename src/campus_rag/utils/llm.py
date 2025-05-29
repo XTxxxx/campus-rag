@@ -106,7 +106,7 @@ async def llm_chat_async(prompts: Prompts) -> str:
         )
 
 
-async def allm_chat_stream(prompts: Prompts) -> AsyncGenerator:
+async def llm_chat_astream(prompts: Prompts) -> AsyncGenerator:
   cache_key = get_cache_key(prompts)
   cached_response = redis_client.get(cache_key)
 
@@ -178,3 +178,18 @@ def structure_llm_chat(prompts, model: BaseModel):
         raise RuntimeError(
           f"Failed to get response from Qwen API after {retries} retries"
         )
+
+
+def parse_as_json(llm_output: str) -> dict:
+  """Parse the LLM output as JSON."""
+  try:
+    return json.loads(llm_output)
+  except json.JSONDecodeError:
+    if llm_output.startswith("```json"):
+      llm_output = llm_output[7:].strip()
+    if llm_output.endswith("```"):
+      llm_output = llm_output[:-3].strip()
+    try:
+      return json.loads(llm_output)
+    except json.JSONDecodeError as e:
+      logging.error(f"Failed to parse LLM output as JSON: {e}")

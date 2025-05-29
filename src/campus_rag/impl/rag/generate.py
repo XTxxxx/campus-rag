@@ -1,5 +1,5 @@
 from campus_rag.constants.prompt import SYSTEM_PROMPT
-from campus_rag.utils.llm import allm_chat_stream
+from campus_rag.utils.llm import llm_chat_astream
 from typing import AsyncGenerator
 from campus_rag.domain.rag.po import ChatMessage
 
@@ -50,6 +50,6 @@ Generate an answer according to the following context.
 """,
   }
 
-  return allm_chat_stream(
+  return llm_chat_astream(
     [SYSTEM_PROMPT] + get_history_prompt(history) + [prompt_content]
   )
