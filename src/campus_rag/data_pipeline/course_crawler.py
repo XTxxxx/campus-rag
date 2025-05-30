@@ -260,6 +260,5 @@ def flat_weekday():
     json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-
 if __name__ == "__main__":
   app()
