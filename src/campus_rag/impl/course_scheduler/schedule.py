@@ -76,7 +76,9 @@ def search_course_from_list(
   return None
 
 
-async def generate_plan(target_courses: list[CourseView], constraint: str) -> PlanView:
+async def generate_plan(
+  target_courses: list[CourseView], constraint: str
+) -> list[PlanView]:
   """Generate a course plan based on the target courses and user constraints.
   This function uses an LLM to generate a plan description and select courses
   based on the provided constraints.
@@ -123,12 +125,7 @@ async def generate_plan(target_courses: list[CourseView], constraint: str) -> Pl
       )
     )
 
-  # Here we would parse the response to extract the plan description and selected courses.
-  # For simplicity, we assume the response is already in the desired format.
-
-  return PlanView(
-    description=response, courses=target_courses[:3]
-  )  # Example: taking first 3 courses
+  return plan_list
 
 
 async def generate_schedule(

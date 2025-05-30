@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import logging
+import re
 from openai import OpenAI, AsyncOpenAI
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel

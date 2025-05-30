@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 from campus_rag.utils.chunk_ops import construct_intro4disp
-from .po import TimeItem
+from .po import TimeItem, CourseFilter
 
 
 class CourseView(BaseModel):
@@ -98,3 +98,9 @@ class PlanView(BaseModel):
     ...,
     description="List of CourseView objects representing the courses in the plan",
   )
+
+
+class GeneratePlanRequest(BaseModel):
+  current: list[CourseView]
+  filter_list: list[CourseFilter]
+  constraint: str
