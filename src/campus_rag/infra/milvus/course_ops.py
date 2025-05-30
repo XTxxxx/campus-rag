@@ -120,24 +120,25 @@ def _construct_filter_expr(
   **kwargs,
 ) -> str:
   conditions = ""
-  for i, keys in enumerate(inner_keys):
-    condition = START_FIELD
-    if parent_key and keys and values:
-      if len(keys) != len(values):
-        raise ValueError("inner_keys and values must have the same length")
-      _parent_key = f'"{parent_key}"' if type(parent_key) == str else parent_key
-      for i, (inner_key, value) in enumerate(zip(keys, values)):
-        condition += f"[{_parent_key}]"
-        for key in inner_key:
-          _key = f'"{key}"' if type(key) == str else key
-          condition += f"[{_key}]"
-        _value = f'"{value}"' if type(value) == str else value
-        condition += f" {_types[_type]} {_value}"
-        if i != len(keys) - 1:
-          condition += f" AND {START_FIELD}"  # add && restriction
-    conditions = (
-      f"({condition})" if conditions == "" else f"{conditions} OR ({condition})"
-    )
+  if inner_keys and parent_key and values:
+    for i, keys in enumerate(inner_keys):
+      condition = START_FIELD
+      if keys:
+        if len(keys) != len(values):
+          raise ValueError("inner_keys and values must have the same length")
+        _parent_key = f'"{parent_key}"' if type(parent_key) == str else parent_key
+        for i, (inner_key, value) in enumerate(zip(keys, values)):
+          condition += f"[{_parent_key}]"
+          for key in inner_key:
+            _key = f'"{key}"' if type(key) == str else key
+            condition += f"[{_key}]"
+          _value = f'"{value}"' if type(value) == str else value
+          condition += f" {_types[_type]} {_value}"
+          if i != len(keys) - 1:
+            condition += f" AND {START_FIELD}"  # add && restriction
+      conditions = (
+        f"({condition})" if conditions == "" else f"{conditions} OR ({condition})"
+      )
   # considering other possibly existing restriction
   for key, value in kwargs.items():
     _value = f'"{value}"' if type(value) == str else value
