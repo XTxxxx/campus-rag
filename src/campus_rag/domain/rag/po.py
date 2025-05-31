@@ -78,7 +78,7 @@ class SearchConfig:
     sparse_weight=0.67,
     dense_weight=0.33,
     limit=25,
-    offset=None,
+    offset=0,
     filter_expr=None,
     output_fields=None,
   ):
