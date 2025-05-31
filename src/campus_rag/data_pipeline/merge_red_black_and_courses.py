@@ -25,6 +25,8 @@ for item in red_black:
         courses[i]["comments"].append(item["chunk"])
       else:
         courses[i]["comments"] = [item["chunk"]]
+for i in range(len(courses)):
+  courses[i]["id"] = i + 1
 # 写回
 json.dump(
   courses,
