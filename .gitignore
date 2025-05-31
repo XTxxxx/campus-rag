@@ -6,3 +6,4 @@ campus_rag.egg-info/
 .idea/
 .ruff_cache/
 .vscode/
+.pytest_cache
