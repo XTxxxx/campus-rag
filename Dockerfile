@@ -30,4 +30,4 @@ COPY --from=builder /root/.local /root/.local
 
 ENV PATH="/root/.local/bin:$PATH"
 
-CMD ["uv", "run", "uvicorn", "src.campus_rag.main:app", "--works", "1", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "src.campus_rag.main:app", "--workers", "1", "--port", "8000"]
