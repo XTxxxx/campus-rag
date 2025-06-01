@@ -278,6 +278,7 @@ async def filter_courses(
   total = cal_total(expr)
 
   if course_filter.preference:  # Perform hybrid search if preference is set
+    logger.debug(f"Using preference for filter: {course_filter.preference}")
     search_config = SearchConfig(
       filter_expr=expr,
       limit=limit,

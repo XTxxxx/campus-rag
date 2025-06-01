@@ -5,11 +5,11 @@ from campus_rag.constants.course import (
   FILTER_LIMIT,
   OUTPUT_JSON,
 )
-from campus_rag.utils.logging_config import setup_logger
 from campus_rag.utils.llm import llm_chat_async, parse_as_json
+import logging
 from .filter import filter_courses
 
-logger = setup_logger()
+logger = logging.getLogger(__name__)
 
 
 def is_conflicting(course: CourseView, existing_course: CourseView) -> bool:
@@ -67,13 +67,12 @@ async def get_target_courses(
 
 
 def search_course_from_list(
-  course_list: list[CourseView], target_name: str
+  course_list: list[CourseView], target_index: int
 ) -> CourseView | None:
-  """Search for a course by its course number in a list of courses."""
-  for course in course_list:
-    if course.name == target_name:
-      return course
-  return None
+  """Search for a course by its course idx in a list of courses."""
+  if target_index < 0 or target_index >= len(course_list):
+    return None
+  return course_list[target_index]
 
 
 async def generate_plan(
@@ -101,11 +100,11 @@ async def generate_plan(
 根据用户输入的课程列表和约束条件，生成1-3个选课计划。不同课之间需要**尽可能**满足约束条件，并且时间不能有冲突。
 对每个计划，你需要输出详细的解释，并且每个计划应该有差异，这几个计划应该按照对用户约束条件的满足度进行排序。
 ##COURSES##
-{" ".join(str(course) for course in target_courses)}
+{"||".join(f"{i}: " + str(course) for i, course in enumerate(target_courses))}
 ##CONSTRAINT##
 {constraint}
 ##OUTPUT##
-你的输出是一个json数组，最外层数组中的每一个元素是一个选课计划
+你的输出是一个json数组，最外层数组中的每一个元素是一个选课计划。
 {OUTPUT_JSON}
 注意，输出是json格式，避免任何无关输出
 """,
@@ -114,13 +113,15 @@ async def generate_plan(
   response = await llm_chat_async(prompt)
   json_response = parse_as_json(response)
   plan_list = []
+  logger.debug(f"Gen plan LLM response: {json_response}")
   for json_plan in json_response:
     plan_list.append(
       PlanView(
         description=json_plan.get("description", ""),
         courses=[
-          search_course_from_list(target_courses, course["name"])
+          c
           for course in json_plan.get("courses", [])
+          if (c := search_course_from_list(target_courses, course["no"])) is not None
         ],
       )
     )
@@ -145,5 +146,10 @@ async def generate_schedule(
   Returns:
       list[PlanView]: A list of generated course plans.
   """
+  logger.debug(
+    f"Generating schedule with {len(existing_courses)} existing courses and {len(filter_list)} filters"
+  )
+  logger.debug(f"Filter list: {filter_list}")
+  logger.debug(f"Constraint: {constraint}")
   target_courses = await get_target_courses(existing_courses, filter_list)
   return await generate_plan(target_courses, constraint)
