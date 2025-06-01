@@ -5,7 +5,7 @@ OUTPUT_JSON = """[
   {
       "description": "",
       "courses": [
-        "name": "Course Name",
+        "no": 0,  # The index of the course provided above, starting from 0
         "time": [
           {
             "weekday": 1,
