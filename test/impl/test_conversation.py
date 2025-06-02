@@ -14,8 +14,8 @@ from sqlalchemy import create_engine
 
 # Assuming your service file is located at campus_rag.service.chat_service
 # Adjust the import path if your file structure is different.
-from campus_rag.impl.conversation import (
-  get_user_by_id,
+from campus_rag.impl.user.conversation import (
+  get_user_by_name,
   create_user,
   create_conversation,
   get_conversation_by_id,
@@ -63,7 +63,7 @@ def mock_llm(mocker):
   # Adjust the path to llm_chat_async according to its actual location
   # relative to where it's called from (i.e., in your chat_service module)
   return mocker.patch(
-    "campus_rag.impl.conversation.llm_chat_async", new_callable=AsyncMock
+    "campus_rag.impl.user.conversation.llm_chat_async", new_callable=AsyncMock
   )
 
 
@@ -91,7 +91,7 @@ async def test_create_user_existing():
 @pytest.mark.asyncio
 async def test_get_user_by_id_success():
   await create_user(TEST_USER_ID)
-  user = await get_user_by_id(TEST_USER_ID)
+  user = await get_user_by_name(TEST_USER_ID)
   assert user is not None
   assert user.user_id == TEST_USER_ID
 
@@ -99,7 +99,7 @@ async def test_get_user_by_id_success():
 @pytest.mark.asyncio
 async def test_get_user_by_id_not_found():
   with pytest.raises(HTTPException) as exc_info:
-    await get_user_by_id("non_existent_user")
+    await get_user_by_name("non_existent_user")
   assert exc_info.value.status_code == 404
   assert "User not found" in exc_info.value.detail
 

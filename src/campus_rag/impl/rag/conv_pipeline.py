@@ -1,4 +1,3 @@
-from pymilvus import MilvusClient
 from fastapi.concurrency import run_in_threadpool
 from typing import AsyncGenerator
 import asyncio
@@ -10,7 +9,7 @@ from campus_rag.impl.rag.llm_tool.reflect import reflect_query, ReflectionCatego
 from campus_rag.infra.milvus.hybrid_retrieve import HybridRetriever
 from campus_rag.infra.reranker import reranker
 from campus_rag.impl.rag.generate import generate_answer
-from campus_rag.constants.milvus import COLLECTION_NAME, MILVUS_URI
+from campus_rag.constants.milvus import COLLECTION_NAME
 from campus_rag.constants.conversation import (
   STATUS_PREFIX,
   CONTEXT_PREFIX,

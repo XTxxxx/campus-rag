@@ -22,41 +22,6 @@ async def get_topk_knowledge_by_query_only(query: TopKQueryModel) -> list[dict]:
     query.query, query.collection_name, query.top_k
   )
 
-
-# @router.post("/knowledge/query_with_filter")
-# async def get_topk_knowledge_by_query_and_filter(
-#   query: TopKQueryModelWithFilter,
-# ) -> list[dict]:
-#   course_filter = query.course_filter
-#   kwargs = {}
-#   if course_filter.course_name is not None:
-#     kwargs["course_name"] = course_filter.course_name
-#   if course_filter.course_number is not None:
-#     kwargs["course_number"] = course_filter.course_number
-#   if course_filter.type is not None:
-#     kwargs["course_type"] = course_filter.type
-#   if course_filter.campus is not None:
-#     kwargs["campus"] = course_filter.campus
-#   if course_filter.department is not None:
-#     kwargs["department"] = course_filter.department
-#   if course_filter.grade is not None:
-#     kwargs["grade"] = course_filter.grade
-#   if course_filter.credit is not None:
-#     kwargs["credit"] = course_filter.credit
-#   if course_filter.weekday is not None:
-#     inner_keys = []
-#     for i in range(3):
-#       res = [i, "time", "day_in_week"]
-#       inner_keys.append(res)
-#     inner_keys = [inner_keys]
-#     values = [course_filter.weekday]
-#     kwargs["inner_keys"] = inner_keys
-#     kwargs["values"] = values
-#   return await get_topk_results_by_query_and_filter(
-#     query.query, query.collection_name, query.top_k, **kwargs
-#   )
-
-
 @router.post("/knowledge/upload")
 async def upload_knowledge(knowledge: UploadKnowledge) -> bool:
   # now if uploading a new knowledge base, it will cover the existing one with the same name

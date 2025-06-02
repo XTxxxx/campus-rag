@@ -4,12 +4,13 @@ import uuid
 from typing import Any, AsyncGenerator
 from campus_rag.constants.conversation import ANSWER_PREFIX
 from campus_rag.domain.rag.po import Query
-from fastapi import HTTPException
-from ..conversation import add_message_to_conversation, get_conversation_by_id
+from campus_rag.domain.user.po import User
+from ..user.conversation import add_message_to_conversation, get_conversation_by_id
 from .conv_pipeline import ConverstaionPipeline
 
 logger = logging.getLogger(__name__)
 # Task map from task id to task information (queue).
+# TODO: add a lock here
 _task_dict: dict[str, dict[str, Any]] = {}
 
 
@@ -35,10 +36,10 @@ async def run_pipeline_and_queue_results(task_id: str, query: str, history: list
 
   # Persist the final answer
   final_answer = metainfo.split(ANSWER_PREFIX)[-1].strip()
-  user_id = _task_dict[task_id]["user_id"]
+  user = _task_dict[task_id]["user"]
   conversation_id = _task_dict[task_id]["conversation_id"]
   await add_message_to_conversation(
-    user_id,
+    user,
     conversation_id,
     content=final_answer,
     role="assistant",
@@ -46,17 +47,17 @@ async def run_pipeline_and_queue_results(task_id: str, query: str, history: list
   )
 
 
-async def start_pipeline(query: Query):
+async def start_pipeline(query: Query, user: User):
   """
   Starts the RAG pipeline in the background and returns a task ID.
   """
   # Add user message immediately
 
   task_id = str(uuid.uuid4())
-  conversation = await get_conversation_by_id(query.user_id, query.conversation_id)
+  conversation = await get_conversation_by_id(user, query.conversation_id)
   history = conversation.messages
   await add_message_to_conversation(
-    query.user_id, query.conversation_id, content=query.query, role="user"
+    user, query.conversation_id, content=query.query, role="user"
   )
 
   # Create a queue for this task
@@ -65,7 +66,7 @@ async def start_pipeline(query: Query):
     "queue": result_queue,
     "status": "running",
     "error_message": None,
-    "user_id": query.user_id,  # Store context for adding assistant message later
+    "user": user,  # Store context for adding assistant message later
     "conversation_id": query.conversation_id,
   }
 
@@ -79,7 +80,10 @@ def task_exists(task_id: str) -> bool:
   """
   Checks if a task with the given ID exists.
   """
-  return task_id in _task_dict and _task_dict[task_id]["status"] == "running"
+  return task_id in _task_dict and (
+    _task_dict[task_id]["status"] == "running"
+    or _task_dict[task_id]["status"] == "completed"
+  )
 
 
 async def get_rag_stream(task_id: int) -> AsyncGenerator:

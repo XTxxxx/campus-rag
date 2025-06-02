@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from typing import AsyncGenerator
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from campus_rag.domain.rag.po import Query
 from campus_rag.impl.rag.pipeline_entry import (
@@ -9,7 +9,7 @@ from campus_rag.impl.rag.pipeline_entry import (
   get_rag_stream,
   task_exists,
 )
-
+from campus_rag.impl.user.user import get_current_user
 
 router = APIRouter()
 
@@ -19,8 +19,9 @@ logger = logging.getLogger(__name__)
 @router.post("/query")
 async def start_rag_pipeline_task(
   query: Query,
+  user: str = Depends(get_current_user),
 ) -> JSONResponse:
-  return JSONResponse(content={"task_id": await start_pipeline(query)})
+  return JSONResponse(content={"task_id": await start_pipeline(query, user)})
 
 
 @router.get("/stream/{task_id}")
