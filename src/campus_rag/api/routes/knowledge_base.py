@@ -56,11 +56,17 @@ async def get_topk_knowledge_by_query_only(query: TopKQueryModel) -> list[dict]:
 #     query.query, query.collection_name, query.top_k, **kwargs
 #   )
 
+
 @router.post("/knowledge/upload")
 async def upload_knowledge(knowledge: UploadKnowledge) -> bool:
   # now if uploading a new knowledge base, it will cover the existing one with the same name
-  return await upload(knowledge.collection_name, knowledge.knowledge, knowledge.chunk_keys,
-               knowledge.max_value_size, knowledge.meta_field)
+  return await upload(
+    knowledge.collection_name,
+    knowledge.knowledge,
+    knowledge.chunk_keys,
+    knowledge.max_value_size,
+    knowledge.meta_field,
+  )
 
 
 @router.get("/knowledge/chunk_ids")
@@ -77,4 +83,6 @@ async def get_chunk(collection_name: str, chunk_id: int) -> str:
 
 @router.post("/knowledge/modify_chunk")
 async def modify_chunk(modify_chunk: ModifyChunk) -> bool:
-  return await modify_chunk_by_id(modify_chunk.collection_name, modify_chunk.chunk_id, modify_chunk.new_chunk)
+  return await modify_chunk_by_id(
+    modify_chunk.collection_name, modify_chunk.chunk_id, modify_chunk.new_chunk
+  )
