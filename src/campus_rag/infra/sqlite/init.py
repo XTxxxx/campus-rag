@@ -6,6 +6,7 @@ from campus_rag.constants.sqlite import (
 )
 from campus_rag.utils.logging_config import setup_logger
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+import campus_rag.domain.user.po  # noqa 这里需要导入PO模块以确保SQLModel能够正确识别和创建表结构
 import campus_rag.domain.rag.po  # noqa 这里需要导入PO模块以确保SQLModel能够正确识别和创建表结构
 import os
 

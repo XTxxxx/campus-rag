@@ -1,3 +1,4 @@
+from fastapi import Depends
 from fastapi.routing import APIRouter
 from campus_rag.impl.course_scheduler.show_info import (
   list_departments,
@@ -6,9 +7,8 @@ from campus_rag.impl.course_scheduler.show_info import (
   list_types,
 )
 from campus_rag.impl.course_scheduler.filter import filter_courses_pagination
-from campus_rag.domain.course.po import CourseFilter, FilterArgs
+from campus_rag.domain.course.po import FilterArgs
 from campus_rag.domain.course.vo import (
-  CourseView,
   FilterResult,
   GeneratePlanRequest,
   PlanView,

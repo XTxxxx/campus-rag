@@ -1,7 +1,8 @@
 from pydantic import UUID4
-from campus_rag.domain.rag.po import User, Conversation, ChatMessage, SortedBy
+from campus_rag.domain.rag.po import Conversation, ChatMessage, SortedBy
 from campus_rag.domain.rag.vo import ConversationView
-from campus_rag.infra.sqlite import conversation as conversation_db
+from campus_rag.domain.user.po import User
+from campus_rag.infra.sqlite import conversation as db
 from fastapi import HTTPException
 from typing import Optional
 from campus_rag.utils.llm import llm_chat_async
@@ -10,37 +11,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def get_user_by_id(user_id: str) -> Optional[User]:
-  """Fetches a user by user_id from the database."""
-  db_user = await conversation_db.find_user_by_id(user_id)
-  if not db_user:
-    raise HTTPException(status_code=404, detail="User not found")
-  return db_user
-
-
-async def create_user(user_id: str) -> User:
-  """Creates a new user in the database."""
-  db_user = await conversation_db.find_user_by_id(user_id)
-  if db_user:
-    return db_user
-    # raise HTTPException(status_code=409, detail="User already exists")
-
-  return await conversation_db.insert_user(user_id)
-
-
-async def create_conversation(user_id: str) -> ConversationView:
+async def create_conversation(user: User) -> ConversationView:
   """Creates a new conversation for a user."""
-  await get_user_by_id(user_id)  # Ensure user exists
-  return ConversationView.fromVO(await conversation_db.insert_conversation(user_id))
+  return ConversationView.fromVO(await db.insert_conversation(user.id))
 
 
 async def get_conversation_by_id(
-  user_id: str, conversation_id: str | UUID4
+  user: User, conversation_id: str | UUID4
 ) -> Conversation:
   """Fetches a specific conversation for a user, including its messages."""
 
-  await get_user_by_id(user_id)
-  conversation = await conversation_db.find_conversation_by_id(user_id, conversation_id)
+  conversation = await db.find_conversation_by_id(user.id, conversation_id)
   if not conversation:
     raise HTTPException(status_code=404, detail="Conversation not found")
 
@@ -48,29 +29,25 @@ async def get_conversation_by_id(
 
 
 async def get_conversations(
-  user_id: str,
+  user: User,
   offset: int = 0,
   limit: int = 10,
   sorted_by: SortedBy = SortedBy.updated_reverse,
 ) -> list[ConversationView]:
   """Fetches a list of conversations for a user with sorting and pagination."""
-  await get_user_by_id(user_id)  # Ensure user exists
-
   try:
-    conversations = await conversation_db.find_conversations_by_user(
-      user_id, offset, limit, sorted_by
+    conversations = await db.find_conversations_by_user(
+      user.id, offset, limit, sorted_by
     )
     return [ConversationView.fromVO(conv) for conv in conversations]
   except ValueError as e:
     raise HTTPException(status_code=400, detail=str(e))
 
 
-async def get_chat_history(user_id: str, conversation_id: str) -> list[ChatMessage]:
+async def get_chat_history(user: User, conversation_id: str) -> list[ChatMessage]:
   """Fetches the chat messages for a specific conversation."""
-  conversation = await get_conversation_by_id(user_id, conversation_id)
-  return await conversation_db.find_messages_by_conversation(
-    conversation.conversation_id
-  )
+  conversation = await get_conversation_by_id(user, conversation_id)
+  return await db.find_messages_by_conversation(conversation.conversation_id)
 
 
 async def extract_title_from_content(content: str) -> str:
@@ -97,7 +74,7 @@ async def extract_title_from_content(content: str) -> str:
 
 
 async def add_message_to_conversation(
-  user_id: str,
+  user: User,
   conversation_id: str,
   content: str,
   role: str,
@@ -105,11 +82,11 @@ async def add_message_to_conversation(
 ) -> ChatMessage:
   """Adds a new message to a conversation."""
 
-  new_message = await conversation_db.insert_message(
+  new_message = await db.insert_message(
     conversation_id, content, role, metainfo=metainfo
   )
 
-  conversation = await get_conversation_by_id(user_id, conversation_id)
+  conversation = await get_conversation_by_id(user, conversation_id)
 
   # Generate title if it's the first user message and no title exists
   if role == "user" and len(conversation.messages) == 1 and conversation.title is None:
@@ -118,8 +95,8 @@ async def add_message_to_conversation(
     logger.debug(
       f"Generated title for conversation {conversation.conversation_id}: {title}"
     )
-    await conversation_db.update_conversation(conversation)
+    await db.update_conversation(conversation)
 
-  await conversation_db.update_conversation_time(conversation.conversation_id)
+  await db.update_conversation_time(conversation.conversation_id)
 
   return new_message
