@@ -78,7 +78,21 @@ async def upload(
 
 
 async def get_chunk_ids_by_collection_name(collection_name: str) -> list[int]:
-  res = mc.query(collection_name=collection_name, output_fields=["id"])
+  offset = 0
+  res = []
+  limit = 10
+  while True:
+    page = mc.query(
+      collection_name=collection_name,
+      filter="",
+      output_fields=["id"],
+      limit=limit,
+      offset=offset
+    )
+    offset += limit
+    res.extend(page)
+    if len(page) < limit:
+      break
   return [int(item["id"]) for item in res]
 
 

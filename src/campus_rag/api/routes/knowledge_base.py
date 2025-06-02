@@ -1,7 +1,21 @@
 from fastapi.routing import APIRouter
-from campus_rag.impl.knowledge_base.selector import *
-from campus_rag.domain.knowledge.po import *
-from campus_rag.impl.knowledge_base.writer import *
+from campus_rag.impl.knowledge_base.selector import (
+  get_topk_results_by_query,
+  get_collection_contents,
+  get_all_collection_names,
+)
+from campus_rag.domain.knowledge.po import (
+  ContentsRequest,
+  TopKQueryModel,
+  UploadKnowledge,
+  ModifyChunk,
+)
+from campus_rag.impl.knowledge_base.writer import (
+  upload,
+  get_chunk_by_id,
+  get_chunk_ids_by_collection_name,
+  modify_chunk_by_id,
+)
 
 router = APIRouter()
 
@@ -11,9 +25,11 @@ async def get_all_existing_knowledge_base_name() -> list[str]:
   return await get_all_collection_names()
 
 
-@router.get("/knowledge/show_contents")
-async def get_knowledge_base_contents_by_name(collection_name: str) -> list[dict]:
-  return await get_collection_contents(collection_name)
+@router.post("/knowledge/show_contents")
+async def get_knowledge_base_contents_by_name(contents_request: ContentsRequest) -> list[dict]:
+  # get contents by certain page: e.g. page-2 contents
+  return await get_collection_contents(contents_request.collection_name, contents_request.page_id,
+                                       contents_request.page_size)
 
 
 @router.post("/knowledge/query")
@@ -72,6 +88,7 @@ async def upload_knowledge(knowledge: UploadKnowledge) -> bool:
 @router.get("/knowledge/chunk_ids")
 async def get_chunk_ids(collection_name: str) -> list[int]:
   # return all avaliable ids in Collection with collection_name
+  # print(collection_name)
   return await get_chunk_ids_by_collection_name(collection_name)
 
 
