@@ -88,8 +88,8 @@ async def get_topk_results_by_query_and_filter(
 # print(
 #   asyncio.run(
 #     (
-#       get_topk_results_by_query_and_filter(
-#         "法学院开了哪些3学分的课", "courses", 5, department="法学院"
+#       get_topk_results_by_query(
+#         "法学院开了哪些3学分的课", "courses", 5
 #       )
 #     )
 #   )

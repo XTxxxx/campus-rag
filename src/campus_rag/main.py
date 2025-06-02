@@ -1,7 +1,7 @@
 from campus_rag.utils.logging_config import setup_logger
 
 logger = setup_logger()
-from campus_rag.api.routes import rag, conversation, course_scheduler
+from campus_rag.api.routes import rag, conversation, course_scheduler, knowledge_base
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -22,6 +22,7 @@ app.add_middleware(
 app.include_router(rag.router)
 app.include_router(conversation.router)
 app.include_router(course_scheduler.router)
+app.include_router(knowledge_base.router)
 
 
 @app.exception_handler(RequestValidationError)
