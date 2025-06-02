@@ -1,5 +1,9 @@
 from sqlmodel import SQLModel, create_engine
-from campus_rag.constants.sqlite import SQLITE_ASYNC_URL, SQLITE_SYNC_URL, SQLITE_FILE_NAME
+from campus_rag.constants.sqlite import (
+  SQLITE_ASYNC_URL,
+  SQLITE_SYNC_URL,
+  SQLITE_FILE_NAME,
+)
 from campus_rag.utils.logging_config import setup_logger
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 import campus_rag.domain.rag.po  # noqa 这里需要导入PO模块以确保SQLModel能够正确识别和创建表结构

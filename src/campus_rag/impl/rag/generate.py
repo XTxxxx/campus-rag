@@ -6,8 +6,6 @@ from campus_rag.domain.rag.po import ChatMessage
 _HistoryLength = 4096
 
 
-
-
 def get_history_prompt(history: list[ChatMessage]) -> list[dict]:
   history = history[::-1]
   history_prompt = []

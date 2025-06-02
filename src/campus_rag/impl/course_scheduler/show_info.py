@@ -37,4 +37,3 @@ def list_grades() -> list[int]:
 
 def list_types() -> list[str]:
   return list_something("course_type")
-
