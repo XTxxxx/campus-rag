@@ -1,13 +1,12 @@
 from sqlmodel import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from campus_rag.domain.rag.po import (
-  User,
   Conversation,
   ChatMessage,
   SortedBy,
   sorted_columns,
 )
+from campus_rag.domain.user.po import User
 from typing import Optional
 from .init import async_session
 import logging
@@ -17,22 +16,20 @@ import uuid
 logger = logging.getLogger(__name__)
 
 
-async def find_user_by_id(user_id: str) -> Optional[User]:
+async def find_user_by_name(username: str) -> Optional[User]:
   """Finds a user by user_id from the database."""
   async with async_session() as session:
-    statement = select(User).where(User.user_id == user_id)
+    statement = select(User).where(User.username == username)
     result = await session.execute(statement)
     return result.scalars().first()
 
 
-async def insert_user(user_id: str) -> User:
+async def insert_user(user: User) -> None:
   """Inserts a new user into the database."""
   async with async_session() as session:
-    new_user = User(user_id=user_id, create_time=time.time())
-    session.add(new_user)
+    session.add(user)
     await session.commit()
-    await session.refresh(new_user)
-    return new_user
+    await session.refresh(user)
 
 
 async def insert_conversation(user_id: str) -> Conversation:
