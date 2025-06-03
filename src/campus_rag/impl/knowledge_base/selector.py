@@ -5,7 +5,7 @@ support kinds of operations for querying knowledge base
 import asyncio
 
 from pymilvus.milvus_client import MilvusClient
-from campus_rag.constants.milvus import *
+from campus_rag.constants.milvus import MILVUS_URI, COLLECTION_NAME, COURSES_COLLECTION_NAME
 from campus_rag.infra.milvus.hybrid_retrieve import HybridRetriever
 from campus_rag.domain.rag.po import SearchConfig
 from campus_rag.infra.milvus.course_ops import filter_with_embedding_select
@@ -18,14 +18,16 @@ visible_fields = {
 
 
 async def get_all_collection_names() -> list[str]:
-  result = await mc.list_collections()
+  result = mc.list_collections()
   return result
 
 
-async def get_collection_contents(collection_name: str) -> list[dict]:
+async def get_collection_contents(collection_name: str, page_id: int, page_size: int) -> list[dict]:
   total = mc.query(
     collection_name=collection_name,
     output_fields=["*"],
+    offset=page_id * page_size,
+    limit=page_size,
   )
   vis = visible_fields.get(collection_name, [])
   res = [{k: v for k, v in item.items() if k in vis} for item in total]

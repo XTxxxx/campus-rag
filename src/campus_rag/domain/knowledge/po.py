@@ -1,8 +1,22 @@
-from typing import Any
 from pydantic import BaseModel
+from typing import Any
+from campus_rag.domain.course.po import CourseFilter
+
+
+class ContentsRequest(BaseModel):
+  collection_name: str
+  page_id: int
+  page_size: int
 
 
 class TopKQueryModel(BaseModel):
+  query: str
+  collection_name: str
+  top_k: int
+
+
+class TopKQueryModelWithFilter(BaseModel):
+  course_filter: CourseFilter
   query: str
   collection_name: str
   top_k: int
