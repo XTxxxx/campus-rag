@@ -4,6 +4,7 @@ from typing import AsyncGenerator
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from campus_rag.domain.rag.po import Query
+from campus_rag.domain.rag.vo import TaskResponse
 from campus_rag.impl.rag.pipeline_entry import (
   start_pipeline,
   get_rag_stream,
@@ -16,15 +17,24 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/query")
+@router.post("/query", response_model=TaskResponse)
 async def start_rag_pipeline_task(
-  query: Query,
-  user: str = Depends(get_current_user),
+  query: Query, user: str = Depends(get_current_user)
 ) -> JSONResponse:
   return JSONResponse(content={"task_id": await start_pipeline(query, user)})
 
 
-@router.get("/stream/{task_id}")
+@router.get(
+  "/stream/{task_id}",
+  response_class=StreamingResponse,
+  responses={
+    200: {
+      "content": {"text/event-stream": {}},
+      "description": "Stream RAG results using Server-Sent Events (SSE)",
+    },
+    404: {"description": "Task not found"},
+  },
+)
 async def stream_rag_pipeline_results(task_id: str) -> StreamingResponse:
   if not task_exists(task_id):
     raise HTTPException(status_code=404, detail=f"Task with ID {task_id} not found.")

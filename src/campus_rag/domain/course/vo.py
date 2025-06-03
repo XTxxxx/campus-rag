@@ -34,10 +34,10 @@ class CourseView(BaseModel):
   )
 
   def __str__(self) -> str:
-    return f"""课程名：{self.name} 课程号：{self.course_number} {self.credit} 学分,
+    return f"""课程名：{self.name} {self.credit} 学分,
 院系和校区: {self.department}, {self.campus} 老师：{self.teacher}
-时间: {self.time}
-描述: {self.description or "无描述"}
+时间: {", ".join(str(t) for t in self.time) or "无时间安排"}
+描述: {self.description[25:] + self.description[:25] or "无描述"}
 """
 
   @classmethod

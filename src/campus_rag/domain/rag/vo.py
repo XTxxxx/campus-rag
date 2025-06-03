@@ -14,3 +14,7 @@ class ConversationView(BaseModel):
       conversation_id=conversation.conversation_id,
       title=conversation.title,
     )
+
+
+class TaskResponse(BaseModel):
+  task_id: str

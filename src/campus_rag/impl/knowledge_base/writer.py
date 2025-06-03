@@ -87,7 +87,7 @@ async def get_chunk_ids_by_collection_name(collection_name: str) -> list[int]:
       filter="",
       output_fields=["id"],
       limit=limit,
-      offset=offset
+      offset=offset,
     )
     offset += limit
     res.extend(page)

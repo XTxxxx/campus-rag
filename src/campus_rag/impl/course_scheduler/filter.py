@@ -179,7 +179,7 @@ def weekday_sub_expr(weekday: list[int]) -> str:
     return ""
 
   weekday_list = list(set(weekday))
-  return f'(ARRAY_CONTAINS(meta["dows"], 0) or ARRAY_CONTAINS_ALL(meta["dows"], {str(weekday_list)}))'
+  return f'(ARRAY_CONTAINS_ANY(meta["dows"], {str(weekday_list + [0])}))'
 
 
 def campus_expr(campus: list[str]) -> str:

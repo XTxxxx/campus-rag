@@ -1,10 +1,11 @@
 from datetime import timedelta
+from operator import is_
 from typing import Optional
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from campus_rag.constants.passwd import ACCESS_TOKEN_EXPIRE_MINUTES
 from campus_rag.domain.user.po import User
-from campus_rag.domain.user.vo import UserCreate, Token, TokenData
+from campus_rag.domain.user.vo import UserCreate, LoginResponse, TokenData
 from campus_rag.infra.sqlite import conversation as db
 from campus_rag.utils.passwd import (
   create_access_token,
@@ -40,7 +41,7 @@ async def register_user(user_create: UserCreate) -> User:
   return new_user
 
 
-async def login_user(login_form: OAuth2PasswordRequestForm) -> Token:
+async def login_user(login_form: OAuth2PasswordRequestForm) -> LoginResponse:
   user = await db.find_user_by_name(login_form.username)
   if not user or not verify_password(login_form.password, user.passwd):
     raise HTTPException(
@@ -53,7 +54,9 @@ async def login_user(login_form: OAuth2PasswordRequestForm) -> Token:
   access_token = create_access_token(
     data={"sub": user.username}, expires_delta=access_token_expires
   )
-  return Token(access_token=access_token, token_type="bearer")
+  return LoginResponse(
+    access_token=access_token, token_type="bearer", is_admin=user.is_admin
+  )
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
@@ -74,3 +77,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
   if user is None:
     raise credentials_exception
   return user
+
+
+async def get_current_admin_user(
+  current_user: User = Depends(get_current_user),
+) -> User:
+  """Ensures the current user is an admin.
+  To add an admin user, use the `add_admin` command in the SQLite init script.
+  """
+  if not current_user.is_admin:
+    raise HTTPException(
+      status_code=403, detail="You do not have permission to perform this action."
+    )
+  return current_user

@@ -1,4 +1,3 @@
-from fastapi import Depends
 from fastapi.routing import APIRouter
 from campus_rag.impl.course_scheduler.show_info import (
   list_departments,

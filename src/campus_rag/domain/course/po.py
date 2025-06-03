@@ -6,6 +6,15 @@ class TimeItem(BaseModel):
   start: int
   end: int
 
+  def __str__(self) -> str:
+    """生成中文描述字符串，包含星期几、开始时间和结束时间。
+
+    Returns:
+        str: 描述字符串，格式为 "周[一二三四五六日]，几点到几点"。
+    """
+    weekday_map = {1: "一", 2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "日"}
+    return f"周{weekday_map.get(self.weekday)}，{self.start + 7}点到{self.end + 7}点"
+
 
 class CourseFilter(BaseModel):
   """Model for filtering courses."""

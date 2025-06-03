@@ -12,3 +12,4 @@ class User(SQLModel, table=True):
   passwd: str = Field(nullable=False)
   create_time: float = Field(default_factory=time.time, nullable=False)
   conversations: list["Conversation"] = Relationship(back_populates="user")
+  is_admin: bool = Field(default=False, nullable=False)
