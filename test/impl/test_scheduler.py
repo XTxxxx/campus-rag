@@ -1,3 +1,4 @@
+from campus_rag.data_pipeline import course_type
 from campus_rag.impl.course_scheduler.schedule import (
   get_target_courses,
   generate_schedule,
@@ -50,8 +51,8 @@ async def test_plan():
   """
   # This is desgined
   filter1 = CourseFilter(
-    campus=["仙林校区"],
-    preference="我喜欢逻辑学和经典物理",
+    type=["公共体育课"],
+    preference="球类课程",
   )
   existing_course = CourseView(
     id=123,
@@ -63,12 +64,12 @@ async def test_plan():
     campus="仙林校区",
     time=[TimeItem(weekday=5, start=1, end=4)],
   )
-  constraint = (
-    "我不希望课程安排过于密集，我不想上两门相似度过高的课程，我只需要选两门课"
-  )
+  constraint = "避免早八课，不要在周三有课"
 
   plan = await generate_schedule(
     existing_courses=[existing_course],
     filter_list=[filter1],
     constraint=constraint,
   )
+
+  logger.info(f"Generated plan: {plan}")

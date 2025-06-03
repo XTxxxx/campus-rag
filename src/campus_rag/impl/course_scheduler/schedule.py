@@ -99,7 +99,7 @@ async def generate_plan(
       "content": f"""##INSTRUCT##
 根据用户输入的课程列表和约束条件，生成1-3个选课计划。不同课之间需要**尽可能**满足约束条件，并且时间不能有冲突。
 对每个计划，你需要输出详细的解释，并且每个计划应该有差异，这几个计划应该按照对用户约束条件的满足度进行排序。
-课程的weekday从1到7，分别代表周一到周日，时间段从1到12，1-4代表上午，5-8代表下午，9-12代表晚上。
+早八的意思是早上八点开始的课程。
 ##COURSES##
 {"||".join(f"{i}: " + str(course) for i, course in enumerate(target_courses))}
 ##CONSTRAINT##
