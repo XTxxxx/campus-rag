@@ -42,7 +42,7 @@ async def reflect_query(query: str, context: List[str], system_prompt: Message) 
   time.sleep(1)
   logger.info("Reflecting on query and context...")
 
-  context_text = "\n".join([f"Passage {i + 1}: {ctx}" for i, ctx in enumerate(context)])
+  context_text = "\n".join([f"Passage {i + 1}: {ctx[:512]}" for i, ctx in enumerate(context)])
 
   prompt_content = {
     "role": "user",

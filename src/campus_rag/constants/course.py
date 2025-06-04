@@ -1,7 +1,7 @@
 COURSES_MAX = 3000
 MAX_COURSES_PER_FILTER = 10
 FILTER_LIMIT = 50
-OUTPUT_JSON = """[
+OUTPUT_JSON = """```json[
   {
       "description": "",
       "courses": [
@@ -11,5 +11,5 @@ OUTPUT_JSON = """[
   {
     ...
   }
-]
+]```
 """

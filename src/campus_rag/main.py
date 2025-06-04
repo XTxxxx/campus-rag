@@ -1,3 +1,5 @@
+from json import JSONDecodeError
+from campus_rag.domain.course.po import ScheduleError
 from campus_rag.utils.logging_config import setup_logger
 
 logger = setup_logger()
@@ -31,4 +33,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
   return JSONResponse(
     status_code=422,
     content={"detail": exc.errors(), "body": exc.body},
+  )
+
+
+@app.exception_handler(ScheduleError)
+async def schedule_error_handler(request: Request, exc: ScheduleError):
+  logger.error("Schedule error")
+  return JSONResponse(
+    status_code=400,
+    content={"detail": "规划时发生错误，请修改后重试！"},
   )

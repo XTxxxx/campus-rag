@@ -22,7 +22,7 @@ _KEYWORDS_PATH = "./data/keywords.json"
 logger = logging.getLogger(__name__)
 
 
-class ConverstaionPipeline:
+class ChatPipeline:
   """对话的流水线
   这个类接收用户查询、历史记录，走一遍管道，并输出流式信息
   但是不会负责对话类的管理，也就是说是stateless的
@@ -95,6 +95,7 @@ class ConverstaionPipeline:
     results_text = CONTEXT_PREFIX + split_string.join(extracted_topk_results)
     results_text = results_text.replace("\n", "\\n")
     results_text = "\\n" + results_text + "\\n"
+    logger.debug(f"Results text: {results_text}")
 
     async for chunk in _yield_wrapper(
       f"Length of extracted topk results: {len(extracted_topk_results)}",

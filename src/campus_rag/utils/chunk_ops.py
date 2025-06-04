@@ -48,6 +48,8 @@ def construct_embedding_key_for_course(chunk: Chunk) -> str:
   embedding_key = f"""{chunk["course_name"]} {chunk["course_number"]}
 老师：{chunk["teacher_name"]}，开课单位：{chunk["department_name"]}
 介绍：{introduction}"""
+  if "comments" in chunk and chunk["comments"]:
+    embedding_key += f" 评价：{chunk['comments']}"
   return embedding_key
 
 

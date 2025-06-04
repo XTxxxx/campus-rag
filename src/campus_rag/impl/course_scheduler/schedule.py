@@ -1,10 +1,11 @@
-from campus_rag.domain.course.po import CourseFilter
+from campus_rag.domain.course.po import CourseFilter, ScheduleError
 from campus_rag.domain.course.vo import CourseView, PlanView
 from campus_rag.constants.course import (
   MAX_COURSES_PER_FILTER,
   FILTER_LIMIT,
   OUTPUT_JSON,
 )
+from campus_rag.utils.keyword_explain import get_keyword_explain
 from campus_rag.utils.llm import llm_chat_async, parse_as_json
 import logging
 from .filter import filter_courses
@@ -89,6 +90,7 @@ async def generate_plan(
   Returns:
       PlanView: A generated course plan containing a description and selected courses.
   """
+  keyword_explain_str = get_keyword_explain("./data/keywords_for_schedule.json")
   prompt = [
     {
       "role": "system",
@@ -99,7 +101,8 @@ async def generate_plan(
       "content": f"""##INSTRUCT##
 根据用户输入的课程列表和约束条件，生成1-3个选课计划。不同课之间需要**尽可能**满足约束条件，并且时间不能有冲突。
 对每个计划，你需要输出详细的解释，并且每个计划应该有差异，这几个计划应该按照对用户约束条件的满足度进行排序。
-早八的意思是早上八点开始的课程。
+##CONTEXT##
+{keyword_explain_str}
 ##COURSES##
 {"||".join(f"{i}: " + str(course) for i, course in enumerate(target_courses))}
 ##CONSTRAINT##
@@ -107,7 +110,6 @@ async def generate_plan(
 ##OUTPUT##
 你的输出是一个json数组，最外层数组中的每一个元素是一个选课计划。
 {OUTPUT_JSON}
-注意，输出是json格式，避免任何无关输出
 """,
     },
   ]

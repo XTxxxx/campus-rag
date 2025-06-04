@@ -63,3 +63,6 @@ class CoursePlan(BaseModel):
   campus: str
   grade: int
   credit: float
+
+class ScheduleError(Exception):
+  pass

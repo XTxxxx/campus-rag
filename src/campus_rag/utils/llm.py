@@ -11,6 +11,7 @@ from openai import OpenAI, AsyncOpenAI
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 from typing import TypedDict, AsyncGenerator
+from campus_rag.domain.course.po import ScheduleError
 from campus_rag.infra.redis import redis_client
 
 _ALI_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
@@ -186,11 +187,12 @@ def parse_as_json(llm_output: str) -> dict:
   try:
     return json.loads(llm_output)
   except json.JSONDecodeError:
-    if llm_output.startswith("```json"):
-      llm_output = llm_output[7:].strip()
-    if llm_output.endswith("```"):
-      llm_output = llm_output[:-3].strip()
-    try:
-      return json.loads(llm_output)
-    except json.JSONDecodeError as e:
-      logging.error(f"Failed to parse LLM output as JSON: {e}")
+    # Search for ```json ```
+    json_match = re.search(r"```json\s*(.*?)\s*```", llm_output, re.DOTALL)
+    if json_match:
+      llm_output = json_match.group(1).strip()
+      try:
+        return json.loads(llm_output)
+      except json.JSONDecodeError as e:
+        logging.error(f"Failed to parse JSON from LLM output: {e}\n{llm_output}")
+        raise ScheduleError

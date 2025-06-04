@@ -6,7 +6,7 @@ from campus_rag.constants.conversation import ANSWER_PREFIX
 from campus_rag.domain.rag.po import Query
 from campus_rag.domain.user.po import User
 from ..user.conversation import add_message_to_conversation, get_conversation_by_id
-from .conv_pipeline import ConverstaionPipeline
+from .chat_pipeline import ChatPipeline
 
 logger = logging.getLogger(__name__)
 # Task map from task id to task information (queue).
@@ -16,10 +16,10 @@ _task_dict: dict[str, dict[str, Any]] = {}
 
 async def run_pipeline_and_queue_results(task_id: str, query: str, history: list):
   """Runs the RAG pipeline and puts results into the task's queue."""
-  conv_pipeline = ConverstaionPipeline()
+  chat_pipeline = ChatPipeline()
   metainfo = ""
   try:
-    async for chunk in conv_pipeline.start(query, history):
+    async for chunk in chat_pipeline.start(query, history):
       # logger.debug(f"Chunk received: {chunk}")
       metainfo = metainfo + chunk
       await _task_dict[task_id]["queue"].put(chunk)

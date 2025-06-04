@@ -12,6 +12,7 @@ Usage:
 TODO: add more collections(maybe not necessary), insert real data crawled from the nju websites
 """
 
+from sqlalchemy import null
 from campus_rag.utils.chunk_ops import (
   construct_embedding_key,
   construct_embedding_key_for_course,
@@ -54,10 +55,9 @@ def create_collections():
       campus_rag_mc.drop_collection(collection)
       logger.info(f"Successfully dropped collection {collection}")
     schema = MilvusClient.create_schema(
-      auto_id=True,
       enable_dynamic_field=True,
     )
-    schema.add_field("id", DataType.INT64, is_primary=True)
+    schema.add_field("id", DataType.VARCHAR, max_length=_MAX_LENGTH, is_primary=True)
     schema.add_field(
       "embedding",
       DataType.FLOAT_VECTOR,
@@ -92,19 +92,18 @@ def create_collections():
     logger.info(f"Successfully created collection {collection}")
 
 
-def insert_teacher_table():
+def upsert_chat(datas: list=["nju_se_teacher.json", "red_and_black_table.json", "student_manual.json"]):
   """
   Insert data into the collection.
   """
-  datas = ["nju_se_teacher.json", "red_and_black_table.json"]
-  logger.info("Inserting data into Milvus")
+  logger.info(f"Inserting data from {datas} into Milvus")
   for data in datas:
     data_path = os.path.join(_DATA_ROOT, data)
     with open(data_path, "r", encoding="utf-8") as f:
       data = json.load(f)
     for chunk in tqdm(data):
       embedding_key = construct_embedding_key(chunk)
-      campus_rag_mc.insert(
+      campus_rag_mc.upsert(
         collection_name=COLLECTION_NAME,
         data={
           "embedding": embedding_model.encode(embedding_key),
@@ -113,12 +112,13 @@ def insert_teacher_table():
           "context": " ".join(chunk["context"]),
           "cleaned_chunk": chunk["cleaned_chunk"],
           "chunk": chunk["chunk"],
+          "id": chunk["id"],
         },
       )
   logger.info("Successfully inserted data into Milvus")
 
 
-def insert_course_data():
+def upsert_course_data():
   """
   Insert course data into the collection.
   Maybe other collections should be refactored into structure like this.
@@ -135,11 +135,15 @@ def insert_course_data():
     embeddings = embedding_model.encode(embedding_keys)
     sparse_embeddings = sparse_embedding_model(embedding_keys)["sparse"]
     meta = [construct_meta_for_course(chunk) for chunk in batch]
+    chunk_ids = [chunk["id"] for chunk in batch]
     to_insert = [
       {
         "embedding": embeddings[i],
         "sparse_embedding": sparse_embeddings[i : i + 1],
+        "source": "课程数据",
+        "context": "",
         "chunk": embedding_keys[i],
+        "id": chunk_ids[i],
         "meta": meta[i],
       }
       for i in range(len(batch))
@@ -148,6 +152,7 @@ def insert_course_data():
       collection_name=COURSES_COLLECTION_NAME,
       data=to_insert,
     )
+    campus_rag_mc.insert(collection_name=COLLECTION_NAME, data=to_insert)
 
   logger.info("Successfully inserted course data into Milvus")
 
@@ -155,8 +160,8 @@ def insert_course_data():
 @app.command()
 def all():
   create_collections()
-  insert_teacher_table()
-  insert_course_data()
+  upsert_chat()
+  upsert_course_data()
 
 
 @app.command()
@@ -180,6 +185,9 @@ def example():
       },
     )
 
+@app.command()
+def upsert_teacher():
+  upsert_chat(datas=["nju_se_teacher.json"])
 
 if __name__ == "__main__":
   app()

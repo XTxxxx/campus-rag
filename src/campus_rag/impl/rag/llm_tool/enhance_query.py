@@ -1,18 +1,8 @@
 import logging
-import json
-from functools import reduce
+from campus_rag.utils.keyword_explain import get_keyword_explain
 from campus_rag.utils.llm import llm_chat_async
 
 logger = logging.getLogger(__name__)
-
-
-def _construct_keyword_explanation(keyword_path: str) -> str:
-  with open(keyword_path, "r") as f:
-    data = json.load(f)
-  return reduce(
-    lambda x, y: x + "\n" + y,
-    [f"{item['keyword']} 的解释是: {item['explanation']}" for item in data],
-  )
 
 
 async def enhance_query(query: str, keyword_path: str) -> str:
@@ -24,7 +14,7 @@ async def enhance_query(query: str, keyword_path: str) -> str:
   """
   logger.info("Enhancing query...")
 
-  keyword_str = _construct_keyword_explanation(keyword_path)
+  keyword_str = get_keyword_explain(keyword_path)
   prompt_content = {
     "role": "user",
     "content": f"""
