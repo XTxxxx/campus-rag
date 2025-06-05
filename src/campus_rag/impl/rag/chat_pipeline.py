@@ -11,6 +11,7 @@ from campus_rag.infra.reranker import reranker
 from campus_rag.impl.rag.generate import generate_answer
 from campus_rag.constants.milvus import COLLECTION_NAME
 from campus_rag.constants.conversation import (
+  CONTEXT_SUFFIX,
   STATUS_PREFIX,
   CONTEXT_PREFIX,
   ANSWER_PREFIX,
@@ -91,8 +92,10 @@ class ChatPipeline:
     )
     topk_results = results[: self.top_k]
     extracted_topk_results = [res["entity"]["chunk"] for res in topk_results]
-    split_string = "\n" + CONTEXT_PREFIX
-    results_text = CONTEXT_PREFIX + split_string.join(extracted_topk_results)
+    split_string = "\n"
+    for i, chunk in enumerate(extracted_topk_results):
+      extracted_topk_results[i] = f"{CONTEXT_PREFIX}{chunk}{CONTEXT_SUFFIX}"
+    results_text = split_string.join(extracted_topk_results)
     results_text = results_text.replace("\n", "\\n")
     results_text = "\\n" + results_text + "\\n"
     logger.debug(f"Results text: {results_text}")

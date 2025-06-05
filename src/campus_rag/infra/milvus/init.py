@@ -92,7 +92,13 @@ def create_collections():
     logger.info(f"Successfully created collection {collection}")
 
 
-def upsert_chat(datas: list=["nju_se_teacher.json", "red_and_black_table.json", "student_manual.json"]):
+def upsert_chat(
+  datas: list = [
+    "nju_se_teacher.json",
+    "red_and_black_table.json",
+    "student_manual.json",
+  ],
+):
   """
   Insert data into the collection.
   """
@@ -124,6 +130,7 @@ def upsert_course_data():
   Maybe other collections should be refactored into structure like this.
   """
   data_path = os.path.join(_DATA_ROOT, "course_list.json")
+  course_id = 0
   with open(data_path, "r", encoding="utf-8") as f:
     data = json.load(f)
   for batch_idx in tqdm(
@@ -134,8 +141,11 @@ def upsert_course_data():
     embedding_keys = [construct_embedding_key_for_course(chunk) for chunk in batch]
     embeddings = embedding_model.encode(embedding_keys)
     sparse_embeddings = sparse_embedding_model(embedding_keys)["sparse"]
-    meta = [construct_meta_for_course(chunk) for chunk in batch]
     chunk_ids = [chunk["id"] for chunk in batch]
+    metas = [construct_meta_for_course(chunk) for chunk in batch]
+    for meta in metas:
+      meta["course_id"] = course_id
+      course_id += 1
     to_insert = [
       {
         "embedding": embeddings[i],
@@ -144,7 +154,7 @@ def upsert_course_data():
         "context": "",
         "chunk": embedding_keys[i],
         "id": chunk_ids[i],
-        "meta": meta[i],
+        "meta": metas[i],
       }
       for i in range(len(batch))
     ]
@@ -185,9 +195,11 @@ def example():
       },
     )
 
+
 @app.command()
 def upsert_teacher():
   upsert_chat(datas=["nju_se_teacher.json"])
+
 
 if __name__ == "__main__":
   app()
