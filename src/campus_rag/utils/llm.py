@@ -187,6 +187,9 @@ def parse_as_json(llm_output: str) -> dict:
   try:
     return json.loads(llm_output)
   except json.JSONDecodeError:
+    # Remove line comment
+    llm_output = re.sub(r"//.*", "", llm_output)
+
     # Search for ```json ```
     json_match = re.search(r"```json\s*(.*?)\s*```", llm_output, re.DOTALL)
     if json_match:

@@ -1,4 +1,7 @@
 from pydantic import BaseModel
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TimeItem(BaseModel):
@@ -24,6 +27,9 @@ class TimeItem(BaseModel):
       else:
         raise ValueError(f"Invalid time slot: {slot}")
 
+    logger.debug(f"self.start: {self.start}, self.end: {self.end}")
+    if self.start == 0:
+      return "自由时间"
     start_hour = time_slot_to_hour(self.start)
     end_hour = time_slot_to_hour(self.end) + 1
 
@@ -63,6 +69,7 @@ class CoursePlan(BaseModel):
   campus: str
   grade: int
   credit: float
+
 
 class ScheduleError(Exception):
   pass

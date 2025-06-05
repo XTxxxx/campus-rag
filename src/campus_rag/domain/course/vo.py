@@ -36,7 +36,7 @@ class CourseView(BaseModel):
   def __str__(self) -> str:
     return f"""课程名：{self.name} {self.credit} 学分,
 院系和校区: {self.department}, {self.campus} 老师：{self.teacher}
-时间: {", ".join(str(t) for t in self.time) or "无时间安排"}
+时间: {", ".join([str(t) for t in self.time]) or "无时间安排"}
 描述: {self.description[25:] + self.description[:25] or "无描述"}
 """
 
@@ -63,7 +63,7 @@ class CourseView(BaseModel):
       distance = course["distance"]
 
     return CourseView(
-      id=course["id"],
+      id=course["meta"]["course_id"],
       course_number=course["meta"]["course_number"],
       name=course["meta"]["course_name"],
       teacher=teachers,

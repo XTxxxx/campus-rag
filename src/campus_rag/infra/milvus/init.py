@@ -22,7 +22,6 @@ from campus_rag.utils.logging_config import setup_logger
 from campus_rag.constants.milvus import (
   MILVUS_URI,
   COLLECTION_NAME,
-  COURSES_COLLECTION_NAME,
   INSERT_BATCH_SIZE,
 )
 from ..embedding import embedding_model, sparse_embedding_model
@@ -42,7 +41,7 @@ campus_rag_mc = MilvusClient(uri=MILVUS_URI)
 _MAX_LENGTH = 65535
 _DATA_ROOT = "./data"
 
-collections = [COLLECTION_NAME, COURSES_COLLECTION_NAME]
+collection = COLLECTION_NAME
 
 
 def create_collections():
@@ -50,49 +49,53 @@ def create_collections():
   Use milvus's dynamic field feature to create a collection with dynamic fields.
   Meta would be stored as json in dynamic field.
   """
-  for collection in collections:
-    if campus_rag_mc.has_collection(collection):
-      campus_rag_mc.drop_collection(collection)
-      logger.info(f"Successfully dropped collection {collection}")
-    schema = MilvusClient.create_schema(
-      enable_dynamic_field=True,
-    )
-    schema.add_field("id", DataType.VARCHAR, max_length=_MAX_LENGTH, is_primary=True)
-    schema.add_field(
-      "embedding",
-      DataType.FLOAT_VECTOR,
-      dim=embedding_model.get_sentence_embedding_dimension(),
-    )
-    # Refer to https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/rag/rag-enrichment-phase for details
-    # sparse embedding: sparse vector used for keyword search
-    schema.add_field("sparse_embedding", DataType.SPARSE_FLOAT_VECTOR)
-    # source: where the chunk comes from, used for routing
-    schema.add_field("source", DataType.VARCHAR, max_length=_MAX_LENGTH, nullable=True)
-    schema.add_field("chunk", DataType.VARCHAR, max_length=_MAX_LENGTH)
-    schema.add_field(
-      "cleaned_chunk", DataType.VARCHAR, max_length=_MAX_LENGTH, nullable=True
-    )
-    schema.add_field("context", DataType.VARCHAR, max_length=_MAX_LENGTH, nullable=True)
+  if campus_rag_mc.has_collection(collection):
+    campus_rag_mc.drop_collection(collection)
+    logger.info(f"Successfully dropped collection {collection}")
+  schema = MilvusClient.create_schema(
+    enable_dynamic_field=True,
+  )
+  schema.add_field("id", DataType.VARCHAR, max_length=_MAX_LENGTH, is_primary=True)
+  schema.add_field(
+    "embedding",
+    DataType.FLOAT_VECTOR,
+    dim=embedding_model.get_sentence_embedding_dimension(),
+  )
+  # Refer to https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/rag/rag-enrichment-phase for details
+  # sparse embedding: sparse vector used for keyword search
+  schema.add_field("sparse_embedding", DataType.SPARSE_FLOAT_VECTOR)
+  # source: where the chunk comes from, used for routing
+  schema.add_field("source", DataType.VARCHAR, max_length=_MAX_LENGTH, nullable=True)
+  schema.add_field("chunk", DataType.VARCHAR, max_length=_MAX_LENGTH)
+  schema.add_field(
+    "cleaned_chunk", DataType.VARCHAR, max_length=_MAX_LENGTH, nullable=True
+  )
+  schema.add_field("context", DataType.VARCHAR, max_length=_MAX_LENGTH, nullable=True)
 
-    # create indexes
-    index_params = campus_rag_mc.prepare_index_params()
-    index_params.add_index(field_name="embedding", index_type="FLAT", metric_type="IP")
-    index_params.add_index(
-      field_name="source",
-    )
-    index_params.add_index(
-      field_name="sparse_embedding",
-      index_type="SPARSE_INVERTED_INDEX",
-      metric_type="IP",
-    )
+  # create indexes
+  index_params = campus_rag_mc.prepare_index_params()
+  index_params.add_index(field_name="embedding", index_type="FLAT", metric_type="IP")
+  index_params.add_index(
+    field_name="source",
+  )
+  index_params.add_index(
+    field_name="sparse_embedding",
+    index_type="SPARSE_INVERTED_INDEX",
+    metric_type="IP",
+  )
 
-    campus_rag_mc.create_collection(
-      collection_name=collection, schema=schema, index_params=index_params
-    )
-    logger.info(f"Successfully created collection {collection}")
+  campus_rag_mc.create_collection(
+    collection_name=collection, schema=schema, index_params=index_params
+  )
+  logger.info(f"Successfully created collection {collection}")
 
 
-def upsert_chat(datas: list=["nju_se_teacher.json", "red_and_black_table.json", "student_manual.json"]):
+def upsert_chat(
+  datas: list = [
+    "nju_se_teacher.json",
+    "student_manual.json",
+  ],
+):
   """
   Insert data into the collection.
   """
@@ -124,6 +127,7 @@ def upsert_course_data():
   Maybe other collections should be refactored into structure like this.
   """
   data_path = os.path.join(_DATA_ROOT, "course_list.json")
+  course_id = 0
   with open(data_path, "r", encoding="utf-8") as f:
     data = json.load(f)
   for batch_idx in tqdm(
@@ -134,24 +138,23 @@ def upsert_course_data():
     embedding_keys = [construct_embedding_key_for_course(chunk) for chunk in batch]
     embeddings = embedding_model.encode(embedding_keys)
     sparse_embeddings = sparse_embedding_model(embedding_keys)["sparse"]
-    meta = [construct_meta_for_course(chunk) for chunk in batch]
     chunk_ids = [chunk["id"] for chunk in batch]
+    metas = [construct_meta_for_course(chunk) for chunk in batch]
+    for meta in metas:
+      meta["course_id"] = course_id
+      course_id += 1
     to_insert = [
       {
         "embedding": embeddings[i],
         "sparse_embedding": sparse_embeddings[i : i + 1],
-        "source": "课程数据",
+        "source": "course",
         "context": "",
         "chunk": embedding_keys[i],
         "id": chunk_ids[i],
-        "meta": meta[i],
+        "meta": metas[i],
       }
       for i in range(len(batch))
     ]
-    campus_rag_mc.insert(
-      collection_name=COURSES_COLLECTION_NAME,
-      data=to_insert,
-    )
     campus_rag_mc.insert(collection_name=COLLECTION_NAME, data=to_insert)
 
   logger.info("Successfully inserted course data into Milvus")
@@ -185,9 +188,11 @@ def example():
       },
     )
 
+
 @app.command()
 def upsert_teacher():
   upsert_chat(datas=["nju_se_teacher.json"])
+
 
 if __name__ == "__main__":
   app()

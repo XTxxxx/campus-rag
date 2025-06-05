@@ -12,7 +12,7 @@ Logical Operators: AND, OR, and NOT combine multiple conditions into complex exp
 """
 
 from campus_rag.constants.course import COURSES_MAX
-from campus_rag.constants.milvus import COURSES_COLLECTION_NAME
+from campus_rag.constants.milvus import COLLECTION_NAME
 from campus_rag.domain.course.po import CourseFilter, FilterArgs, TimeItem
 from campus_rag.domain.course.vo import CourseView, FilterResult
 from campus_rag.domain.rag.po import SearchConfig
@@ -253,7 +253,7 @@ def gen_filter_expr(filter: CourseFilter) -> str:
   return " AND ".join(exprs) if exprs else None
 
 
-filter_retriever = HybridRetriever(campus_rag_mc, COURSES_COLLECTION_NAME)
+filter_retriever = HybridRetriever(campus_rag_mc, COLLECTION_NAME)
 
 
 def cal_total(filter_expr: str) -> int:
@@ -262,7 +262,7 @@ def cal_total(filter_expr: str) -> int:
     return 0
 
   res = campus_rag_mc.query(
-    COURSES_COLLECTION_NAME,
+    COLLECTION_NAME,
     filter_expr,
     ["id"],
     limit=COURSES_MAX,
@@ -295,7 +295,7 @@ async def filter_courses(
       total=total,
     )
   search_results = campus_rag_mc.query(
-    COURSES_COLLECTION_NAME,
+    COLLECTION_NAME,
     expr,
     ["id", "meta"],
     limit=limit,

@@ -73,3 +73,24 @@ async def test_plan():
   )
 
   logger.info(f"Generated plan: {plan}")
+
+
+@pytest.mark.asyncio
+async def test_se():
+  """
+  Test the get_target_courses function.
+  This is a simple test that checks if the function returns a non-empty list.
+  """
+  # This is desgined
+  filter1 = CourseFilter(
+    department=["软件学院"],
+  )
+  constraint = "软院水课"
+
+  plan = await generate_schedule(
+    existing_courses=[],
+    filter_list=[filter1],
+    constraint=constraint,
+  )
+
+  logger.info(f"Generated plan: {plan}")

@@ -8,7 +8,7 @@ from pymilvus import MilvusClient, DataType, WeightedRanker, AnnSearchRequest
 from campus_rag.constants.milvus import (
   MILVUS_URI,
   COLLECTION_NAME,
-  COURSES_COLLECTION_NAME,
+  COLLECTION_NAME,
   START_FIELD,
 )
 
@@ -105,7 +105,7 @@ def select_like(
 
 def select_all(limit: int) -> list[dict]:
   return client.query(
-    collection_name=COURSES_COLLECTION_NAME,
+    collection_name=COLLECTION_NAME,
     filter="",
     output_fields=["*"],
     limit=limit,
@@ -235,12 +235,12 @@ async def filter_with_embedding_select(
 # test
 if __name__ == "__main__":
   mc = MilvusClient(uri=MILVUS_URI)
-  # create_course_collection(mc, COURSES_COLLECTION_NAME)
-  # drop_collections(MilvusClient(uri=MILVUS_URI), COURSES_COLLECTION_NAME)
-  # print(select_like(COURSES_COLLECTION_NAME, output_fields=["*"], course_number="06020300"))
+  # create_course_collection(mc, COLLECTION_NAME)
+  # drop_collections(MilvusClient(uri=MILVUS_URI), COLLECTION_NAME)
+  # print(select_like(COLLECTION_NAME, output_fields=["*"], course_number="06020300"))
   print(
     select_from_inner_datas(
-      COURSES_COLLECTION_NAME,
+      COLLECTION_NAME,
       ["*"],
       "eq",
       "time_place",
@@ -254,6 +254,6 @@ if __name__ == "__main__":
       # grades=2022,  # trigger error
     )
   )
-  # print(select_eq(COURSES_COLLECTION_NAME, output_fields=["*"], limit=2, course_number="06020300"))
+  # print(select_eq(COLLECTION_NAME, output_fields=["*"], limit=2, course_number="06020300"))
   # print(select_all(limit=16000))
   # print(client.list_collections())

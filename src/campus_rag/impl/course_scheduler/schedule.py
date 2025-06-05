@@ -108,7 +108,7 @@ async def generate_plan(
 ##CONSTRAINT##
 {constraint}
 ##OUTPUT##
-你的输出是一个json数组，最外层数组中的每一个元素是一个选课计划。
+你的输出是一个json数组，最外层数组中的每一个元素是一个选课计划，注意json中不能有注释。
 {OUTPUT_JSON}
 """,
     },

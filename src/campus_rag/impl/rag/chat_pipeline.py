@@ -11,9 +11,11 @@ from campus_rag.infra.reranker import reranker
 from campus_rag.impl.rag.generate import generate_answer
 from campus_rag.constants.milvus import COLLECTION_NAME
 from campus_rag.constants.conversation import (
+  CONTEXT_SUFFIX,
   STATUS_PREFIX,
   CONTEXT_PREFIX,
   ANSWER_PREFIX,
+  TEST_PREFIX,
 )
 from campus_rag.domain.rag.po import ChatMessage, SearchConfig
 from campus_rag.infra.milvus.init import campus_rag_mc
@@ -28,7 +30,7 @@ class ChatPipeline:
   但是不会负责对话类的管理，也就是说是stateless的
   """
 
-  def __init__(self):
+  def __init__(self, test: bool = False):
     self.enhance_query = enhance_query
     self.mc = campus_rag_mc
     self.hybrid_retriever = HybridRetriever(mc=self.mc, collection_name=COLLECTION_NAME)
@@ -37,6 +39,7 @@ class ChatPipeline:
     self.async_generator = generate_answer
     self.limit = 25
     self.top_k = 5
+    self.test = test
 
   async def start(self, query: str, history: list[ChatMessage]) -> AsyncGenerator:
     async def _yield_wrapper(log_info: str, yield_info: str):
@@ -90,9 +93,19 @@ class ChatPipeline:
       results=results,
     )
     topk_results = results[: self.top_k]
+
+    # If test, just return IDs
+    if self.test:
+      chunk_ids = [res["id"] for res in topk_results]
+      test_result = f"{TEST_PREFIX} Test mode, returning chunk IDs: \\n"
+      yield test_result
+      yield chunk_ids
+
     extracted_topk_results = [res["entity"]["chunk"] for res in topk_results]
-    split_string = "\n" + CONTEXT_PREFIX
-    results_text = CONTEXT_PREFIX + split_string.join(extracted_topk_results)
+    split_string = "\n"
+    for i, chunk in enumerate(extracted_topk_results):
+      extracted_topk_results[i] = f"{CONTEXT_PREFIX}{chunk}{CONTEXT_SUFFIX}"
+    results_text = split_string.join(extracted_topk_results)
     results_text = results_text.replace("\n", "\\n")
     results_text = "\\n" + results_text + "\\n"
     logger.debug(f"Results text: {results_text}")
@@ -117,15 +130,6 @@ class ChatPipeline:
     if reflection_result["category"] == ReflectionCategory.IRRELEVANT.value:
       # Irrelevant question, use context free metainfo and remove the context
       extracted_topk_results = []
-    elif (
-      reflection_result["category"] == ReflectionCategory.RELEVANT_INSUFFICIENT.value
-    ):
-      # Relevant but insufficient question, use context free metainfo and need not generate answer
-      answer_text = (
-        f"{ANSWER_PREFIX} 抱歉，根据目前检索到的信息，我回答不了这个问题！\\n"
-      )
-      yield answer_text
-      return
     else:
       async for chunk in _yield_wrapper(
         "Returning context...",

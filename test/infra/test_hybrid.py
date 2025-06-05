@@ -2,7 +2,7 @@ from campus_rag.infra.milvus.hybrid_retrieve import HybridRetriever
 from campus_rag.domain.rag.po import SearchConfig
 from campus_rag.constants.milvus import (
   COLLECTION_NAME,
-  COURSES_COLLECTION_NAME,
+  COLLECTION_NAME,
   MILVUS_URI,
 )
 from campus_rag.utils.logging_config import setup_logger
