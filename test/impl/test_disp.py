@@ -5,7 +5,7 @@ from campus_rag.impl.course_scheduler.show_info import (
   list_types,
 )
 import campus_rag.infra.milvus.course_ops as course_searcher
-from campus_rag.constants.milvus import COURSES_COLLECTION_NAME
+from campus_rag.constants.milvus import COLLECTION_NAME
 from campus_rag.utils.logging_config import setup_logger
 
 logger = setup_logger()
@@ -13,7 +13,7 @@ logger = setup_logger()
 
 def test_diy():
   data_list = course_searcher.select_diy(
-    COURSES_COLLECTION_NAME, None, ["meta"], limit=10000
+    COLLECTION_NAME, None, ["meta"], limit=10000
   )
   types = set([data["meta"]["course_type"] for data in data_list])
   logger.info(types)

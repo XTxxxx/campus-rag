@@ -6,7 +6,7 @@ from pymilvus.milvus_client import MilvusClient
 from campus_rag.constants.milvus import (
   MILVUS_URI,
   COLLECTION_NAME,
-  COURSES_COLLECTION_NAME,
+  COLLECTION_NAME,
   COLLECTIONS,
 )
 from campus_rag.infra.milvus.hybrid_retrieve import HybridRetriever
@@ -16,7 +16,7 @@ from campus_rag.infra.milvus.course_ops import filter_with_embedding_select
 mc = MilvusClient(uri=MILVUS_URI)
 visible_fields = {
   COLLECTION_NAME: ["source", "chunk"],
-  COURSES_COLLECTION_NAME: ["meta"],
+  COLLECTION_NAME: ["meta"],
 }
 
 
