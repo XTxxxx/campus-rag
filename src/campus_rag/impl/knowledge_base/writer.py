@@ -3,12 +3,14 @@ from campus_rag.constants.milvus import MILVUS_URI, COLLECTION_NAME
 from campus_rag.infra.embedding import sparse_embedding_model, embedding_model
 from campus_rag.utils.chunk_ops import construct_embedding_key
 import logging
-import uuid
 import json
+from pathlib import Path
+
+current_dir = str(Path(__file__).parent.resolve())
 
 mc = MilvusClient(uri=MILVUS_URI)
 _MAX_LENGTH = 65535
-SOURCE_DB = "./data/source.json"
+SOURCE_DB = "data/source_list.json"
 
 
 async def _construct_embedding_key(

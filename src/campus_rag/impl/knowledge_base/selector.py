@@ -12,12 +12,15 @@ from campus_rag.infra.milvus.hybrid_retrieve import HybridRetriever
 from campus_rag.domain.rag.po import SearchConfig
 from fastapi.concurrency import run_in_threadpool
 import json
+from pathlib import Path
+
+current_dir = str(Path(__file__).parent.resolve())
 
 mc = MilvusClient(uri=MILVUS_URI)
 visible_fields = {
   COLLECTION_NAME: ["id", "source", "context", "chunk", "cleaned_chunk"],
 }
-SOURCE_DB = "./data/source.json"
+SOURCE_DB = "data/source_list.json"
 
 
 async def get_all_collection_names() -> list[str]:

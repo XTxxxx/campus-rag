@@ -37,7 +37,7 @@ async def get_all_existing_knowledge_base_sources(
 
 
 @router.post("/knowledge/show_contents")
-async def get_knowledge_base_contents_by_name(
+async def get_knowledge_base_contents_by_source(
   contents_request: ContentsRequest,
   user: User = Depends(get_current_admin_user),
 ) -> list[dict]:
@@ -87,7 +87,7 @@ async def upload_knowledge(
 #   return await get_chunk_by_id(collection_name, chunk_id)
 
 
-@router.post("/knowledge/modify_chunk")
+@router.post("/knowledge/modify")
 async def modify_chunk(
   mr: ModifyRequest, user: User = Depends(get_current_admin_user)
 ) -> bool:
