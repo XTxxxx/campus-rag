@@ -1,7 +1,9 @@
 from pymilvus import MilvusClient, DataType
 from campus_rag.constants.milvus import MILVUS_URI
 from campus_rag.infra.embedding import sparse_embedding_model, embedding_model
+from campus_rag.utils.chunk_ops import construct_embedding_key
 import logging
+import uuid
 
 mc = MilvusClient(uri=MILVUS_URI)
 _MAX_LENGTH = 65535
@@ -48,29 +50,31 @@ async def _create_collection(collection_name: str):
 async def upload(
   collection_name: str,
   knowledge: list[dict],
-  chunk_keys: list[str],
-  max_value_size: int,
-  meta_field: bool,
 ) -> bool:
   try:
     await _create_collection(collection_name)
     insert_datas = []
     for chunk in knowledge:
-      embedding_keys = await _construct_embedding_key(chunk, chunk_keys, max_value_size)
+      embedding_keys = construct_embedding_key(chunk)
       embeddings = embedding_model.encode(embedding_keys)
       sparse_embeddings = sparse_embedding_model([embedding_keys])["sparse"]
       insert_datas.append(
         {
           "embedding": embeddings,
           "sparse_embedding": sparse_embeddings,
+          "source": chunk["source"],
+          "context": chunk["context"],
+          "cleaned_chunk": chunk["cleaned_chunk"],
           "chunk": embedding_keys,
-          **({"meta": chunk} if meta_field else {}),
+          "id": chunk["id"],
         }
       )
     mc.insert(
       collection_name=collection_name,
       data=insert_datas,
     )
+    # immediately flush for search
+    mc.flush(collection_name=collection_name)
     return True
   except Exception as e:
     logging.error(e)
@@ -112,23 +116,21 @@ async def modify_chunk_by_id(
   try:
     embeddings = embedding_model.encode(new_chunk)
     sparse_embeddings = sparse_embedding_model([new_chunk])["sparse"]
-    # select possible meta field
-    meta = {}
     res = mc.query(
       collection_name=collection_name,
       filter=f"id == {chunk_id}",
       output_fields=["*"],
       limit=1,
     )[0]
-    if "meta" in res.keys():
-      meta = {"meta": res["meta"]}
     new_data = [
       {
-        "id": chunk_id,
         "embedding": embeddings,
         "sparse_embedding": sparse_embeddings,
+        "source": res["source"],
+        "context": res["context"],
+        "cleaned_chunk": res["cleaned_chunk"],
         "chunk": new_chunk,
-        **meta,
+        "id": chunk_id,
       }
     ]
     mc.upsert(

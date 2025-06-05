@@ -27,7 +27,7 @@ router = APIRouter()
 async def get_all_existing_knowledge_base_name(
   user: User = Depends(get_current_admin_user),
 ) -> list[str]:
-  return await get_all_collection_names()
+  return ["chat"]  # we only op for chat
 
 
 @router.post("/knowledge/show_contents")
@@ -61,9 +61,6 @@ async def upload_knowledge(
   return await upload(
     knowledge.collection_name,
     knowledge.knowledge,
-    knowledge.chunk_keys,
-    knowledge.max_value_size,
-    knowledge.meta_field,
   )
 
 
