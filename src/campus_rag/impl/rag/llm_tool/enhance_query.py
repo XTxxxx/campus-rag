@@ -19,8 +19,9 @@ async def enhance_query(query: str, keyword_path: str) -> str:
     "role": "user",
     "content": f"""
     ## Instruction ##
-    Enhance usr's query according to the following keywords and their explanations.
-    Only output the enhanced query, do not add any other content.
+    根据以下关键词和它们的解释，增强用户的查询。如果用户的问题中包含相关的关键词，提供他们的解释到问题中，否则不要添加任何解释。
+    增强查询时不要增加添加无关的信息，不能改变查询原本的意思。
+    ## Keywords and Explanations ##
     {keyword_str}
     ## Query ##
     {query}

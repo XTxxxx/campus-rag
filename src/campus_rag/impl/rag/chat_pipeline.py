@@ -182,11 +182,9 @@ class ChatPipeline:
       f"{ANSWER_PREFIX}\\n",
     ):
       yield chunk
-
     stream = await self.async_generator(
-      query=enhanced_query, chunks=extracted_topk_results, history=history
+      query=query, chunks=extracted_topk_results, history=history
     )
-
     async for token in stream:
       token = token.replace("\n", "\\n")
       yield token

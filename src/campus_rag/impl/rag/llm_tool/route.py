@@ -31,7 +31,7 @@ async def route_query(query: str) -> list[str]:
         请输出路由列表，用逗号分隔，格式为 "source1, source2, ..."，其中 source1, source2 是数据源的名称。
         不要输出任何其他内容或解释信息！
         ## Example ##
-        南京大学有哪些做NLP的老师？
+        南京大学有哪些做自然语言处理的老师？
         > course, teacher
 
         有没有事少分高的二层次英语课？

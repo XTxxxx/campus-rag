@@ -146,5 +146,5 @@ async def test_diy():
 
   chat_pipeline = ChatPipeline(test=True)
   questions = ["南京大学有哪些老师做NLP", "有没有事少分高的英语课？“"]
-  chunks = await retrieve(questions[0], chat_pipeline)
+  chunks = await retrieve(questions[1], chat_pipeline)
   logger.info(f"Retrieved Chunks: {chunks}")

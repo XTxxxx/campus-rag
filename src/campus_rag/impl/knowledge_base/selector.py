@@ -35,7 +35,6 @@ async def get_collection_contents(
   )
   vis = visible_fields.get(collection_name, [])
   res = [{k: v for k, v in item.items() if k in vis} for item in total]
-  breakpoint()
   return res
 
 
