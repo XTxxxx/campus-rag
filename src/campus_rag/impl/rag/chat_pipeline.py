@@ -6,6 +6,7 @@ import logging
 from campus_rag.constants.prompt import SYSTEM_PROMPT
 from campus_rag.impl.rag.llm_tool.enhance_query import enhance_query
 from campus_rag.impl.rag.llm_tool.reflect import reflect_query, ReflectionCategory
+from campus_rag.impl.rag.llm_tool.route import route_query
 from campus_rag.infra.milvus.hybrid_retrieve import HybridRetriever
 from campus_rag.infra.reranker import reranker
 from campus_rag.impl.rag.generate import generate_answer
@@ -37,9 +38,16 @@ class ChatPipeline:
     self.collection_name = COLLECTION_NAME
     self.reranker = reranker
     self.async_generator = generate_answer
-    self.limit = 25
-    self.top_k = 5
+    self.limit = 50
+    self.top_k = 10
     self.test = test
+    self.available_sources = ["course", "teacher", "manual"]
+    self.search_strategy = {
+      0: {"global": 5},
+      1: {"global": 3, "local": 3},
+      2: {"global": 3, "local": 3},
+      3: {"global": 2, "local": 2},
+    }
 
   async def start(self, query: str, history: list[ChatMessage]) -> AsyncGenerator:
     async def _yield_wrapper(log_info: str, yield_info: str):
@@ -57,51 +65,83 @@ class ChatPipeline:
       yield yield_info
       await asyncio.sleep(0)
 
-    # Enhance the query
+    # ENHANCE STATUS
     async for chunk in _yield_wrapper(
       "Enhancing query...", f"{STATUS_PREFIX} Enhancing query...{query}\\n"
     ):
       yield chunk
-
     enhanced_query = await self.enhance_query(query, _KEYWORDS_PATH)
-
     async for chunk in _yield_wrapper(
       f"Enhanced query: {enhanced_query}",
       f"{STATUS_PREFIX} Enhanced query done, retrieving chunks...{enhanced_query}\\n",
     ):
       yield chunk
 
-    # Retrieve the results
-    results = await self.hybrid_retriever.retrieve(
-      question=enhanced_query,
-      config=SearchConfig(
-        limit=self.limit,
-        output_fields=["chunk", "meta", "context", "source"],
-      ),
-    )
-
+    # ROUTE STATUS
+    routed_sources = await route_query(enhanced_query)
+    routed_sources.append("global")
     async for chunk in _yield_wrapper(
-      f"Length of retrieved results: {len(results)}",
-      f"{STATUS_PREFIX} Retrieving results done, reranking...\\n",
+      f"Routed to sources: {routed_sources}",
+      f"{STATUS_PREFIX} Routing done, target sources: {routed_sources}\\n",
     ):
       yield chunk
-
-    # Rerank
-    results = await run_in_threadpool(
-      self.reranker.rerank,
-      query=enhanced_query,
-      results=results,
+    search_strategy = self.search_strategy.get(
+      len(routed_sources), {"global": 1, "local": 1}
     )
-    topk_results = results[: self.top_k]
+    logger.debug(f"Search strategy: {search_strategy}")
 
-    # If test, just return IDs
+    # RETRIEVAL STATUS
+    all_results = []
+    seen_chunk_ids = set()
+    for source in routed_sources:
+      async for chunk in _yield_wrapper(
+        f"Retrieving from {source}...",
+        f"{STATUS_PREFIX} Retrieving from {source}...\\n",
+      ):
+        yield chunk
+      if source != "global":
+        filter_expr = f'source == "{source}"'
+      else:
+        filter_expr = None
+      source_results = await self.hybrid_retriever.retrieve(
+        question=enhanced_query,
+        config=SearchConfig(
+          limit=self.limit,
+          output_fields=["*"],
+          filter_expr=filter_expr,
+        ),
+      )
+      source_reranked = await run_in_threadpool(
+        self.reranker.rerank,
+        query=enhanced_query,
+        results=source_results,
+      )
+      source_topk = []
+      for result in source_reranked[: search_strategy["local"]]:
+        chunk_id = result.get("id")
+        if chunk_id not in seen_chunk_ids:
+          source_topk.append(result)
+          seen_chunk_ids.add(chunk_id)
+      all_results.extend(source_topk)
+      async for chunk in _yield_wrapper(
+        f"Retrieved {len(source_topk)} unique chunks from {source}",
+        f"{STATUS_PREFIX} Retrieved {len(source_topk)} chunks from {source}\\n",
+      ):
+        yield chunk
+
+    async for chunk in _yield_wrapper(
+      f"Total unique chunks retrieved: {len(all_results)}",
+      f"{STATUS_PREFIX} Total unique chunks retrieved: {len(all_results)}\\n",
+    ):
+      yield chunk
     if self.test:
-      chunk_ids = [res["id"] for res in topk_results]
+      chunks = [
+        {"id": res["id"], "chunk": res["entity"]["chunk"]} for res in all_results
+      ]
       test_result = f"{TEST_PREFIX} Test mode, returning chunk IDs: \\n"
       yield test_result
-      yield chunk_ids
-
-    extracted_topk_results = [res["entity"]["chunk"] for res in topk_results]
+      yield chunks
+    extracted_topk_results = [res["entity"]["chunk"] for res in all_results]
     split_string = "\n"
     for i, chunk in enumerate(extracted_topk_results):
       extracted_topk_results[i] = f"{CONTEXT_PREFIX}{chunk}{CONTEXT_SUFFIX}"
@@ -109,14 +149,13 @@ class ChatPipeline:
     results_text = results_text.replace("\n", "\\n")
     results_text = "\\n" + results_text + "\\n"
     logger.debug(f"Results text: {results_text}")
-
     async for chunk in _yield_wrapper(
       f"Length of extracted topk results: {len(extracted_topk_results)}",
       f"{STATUS_PREFIX} Reranking done, reflecting...",
     ):
       yield chunk
 
-    # Reflect, detail see definition of ReflectionCategory
+    # REFLECTION STATUS
     reflection_result = await reflect_query(
       query, extracted_topk_results, SYSTEM_PROMPT
     )
