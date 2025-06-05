@@ -95,7 +95,6 @@ def create_collections():
 def upsert_chat(
   datas: list = [
     "nju_se_teacher.json",
-    "red_and_black_table.json",
     "student_manual.json",
   ],
 ):

@@ -19,8 +19,7 @@ class ReflectionCategory(Enum):
   """
 
   IRRELEVANT = 1  # 无关问题
-  RELEVANT_INSUFFICIENT = 2  # 有关问题，但是不足以回答
-  ANSWERABLE = 3  # 正常回答
+  ANSWERABLE = 2  # 正常回答
 
 
 class ReflectionResult(BaseModel):
@@ -42,7 +41,9 @@ async def reflect_query(query: str, context: List[str], system_prompt: Message) 
   time.sleep(1)
   logger.info("Reflecting on query and context...")
 
-  context_text = "\n".join([f"Passage {i + 1}: {ctx[:512]}" for i, ctx in enumerate(context)])
+  context_text = "\n".join(
+    [f"Passage {i + 1}: {ctx[:512]}" for i, ctx in enumerate(context)]
+  )
 
   prompt_content = {
     "role": "user",
@@ -51,8 +52,7 @@ async def reflect_query(query: str, context: List[str], system_prompt: Message) 
         Analyze the user's question and the provided context passages. 
         Determine if:
         1 问题和南京大学校园信息无关，或者是不需要使用上下文信息就能回答的问题（如打招呼信息）(category 1)
-        2.问题和南京大学校园信息相关，但是根据上下文无法准确的回答出来(category 2)
-        3.问题相关，并且可以通过上下文回答(category 3)
+        2.问题相关，并且可以通过上下文回答(category 2)
         
         ## User Question ##
         {query}
@@ -62,7 +62,7 @@ async def reflect_query(query: str, context: List[str], system_prompt: Message) 
         
         Return your analysis in JSON format with the following structure:
         {{
-            "category": <category number (1, 2, or 3)>,
+            "category": <category number (1, 2)>,
             "explanation": "<your explanation for the classification>"
         }}
 
