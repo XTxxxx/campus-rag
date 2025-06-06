@@ -8,7 +8,6 @@ from pymilvus import MilvusClient, DataType, WeightedRanker, AnnSearchRequest
 from campus_rag.constants.milvus import (
   MILVUS_URI,
   COLLECTION_NAME,
-  COLLECTION_NAME,
   START_FIELD,
 )
 

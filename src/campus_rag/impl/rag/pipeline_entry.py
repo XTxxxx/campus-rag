@@ -20,7 +20,7 @@ async def run_pipeline_and_queue_results(task_id: str, query: str, history: list
   metainfo = ""
   try:
     async for chunk in chat_pipeline.start(query, history):
-      # logger.debug(f"Chunk received: {chunk}")
+      logger.debug(f"Chunk received: {chunk}")
       metainfo = metainfo + chunk
       await _task_dict[task_id]["queue"].put(chunk)
       await asyncio.sleep(0)

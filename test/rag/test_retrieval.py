@@ -1,10 +1,10 @@
 import json
-from re import A
 import pytest
 import typer
 import os
 from tqdm import tqdm
 from campus_rag.constants.conversation import TEST_PREFIX
+from campus_rag.impl.rag.chat_pipeline import ChatPipeline
 from campus_rag.utils.logging_config import setup_logger
 
 logger = setup_logger()
@@ -91,6 +91,15 @@ def eval(filename):
   return len(test_data), hit_one, hit_all, top1_hit, top3_hit
 
 
+async def retrieve(question: str, chat_pipeline: ChatPipeline) -> str:
+  ares_generator = chat_pipeline.start(question, [])
+  async for res in ares_generator:
+    if TEST_PREFIX in res:
+      chunks = await anext(ares_generator)
+      break
+  return chunks
+
+
 async def calculate_actual_chunk(filename: str):
   from campus_rag.impl.rag.chat_pipeline import ChatPipeline
 
@@ -100,12 +109,8 @@ async def calculate_actual_chunk(filename: str):
     question = item.get("question", "")
     if not question:
       continue
-    ares_generator = chat_pipeline.start(question, [])
-    async for res in ares_generator:
-      if TEST_PREFIX in res:
-        test_response = await anext(ares_generator)
-        break
-    item["actual_chunk"] = test_response
+    chunks = await retrieve(question, chat_pipeline)
+    item["actual_chunk"] = [chunk["id"] for chunk in chunks if "id" in chunk]
     logger.info(f"Question: {question}, Retrieved Chunks: {item['actual_chunk']}")
   dump_json_file(os.path.join(test_output_root, filename), test_data)
 
@@ -134,5 +139,12 @@ async def test_driver():
   logger.info(f"Total Top-3 Hit Rate: {total_top3_hit / total_len:.2f}")
 
 
-if __name__ == "__main__":
-  app()
+@pytest.mark.asyncio
+async def test_diy():
+  """Run this to test a single question"""
+  from campus_rag.impl.rag.chat_pipeline import ChatPipeline
+
+  chat_pipeline = ChatPipeline(test=True)
+  questions = ["南京大学有哪些老师做NLP", "有没有事少分高的英语课？“"]
+  chunks = await retrieve(questions[1], chat_pipeline)
+  logger.info(f"Retrieved Chunks: {chunks}")
