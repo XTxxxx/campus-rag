@@ -59,7 +59,7 @@ async def upload_knowledge(
 
 
 @router.delete("/knowledge/delete", response_model=bool)
-async def delete_knowledge(request_id: str):
+async def delete_knowledge(request_id: str, user: User = Depends(get_current_admin_user)):
   return await delete_knowledge_by_id(request_id)
 
 

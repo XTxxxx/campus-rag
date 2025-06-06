@@ -99,11 +99,14 @@ async def upload(
 
 async def delete_knowledge_by_id(request_id: str) -> bool:
   try:
-    expr = f"\"id\" in ['{request_id}'] AND \"source\" != 'course'"
+    expr = f"\"id\" == '{request_id}' AND \"source\" != 'course'"
+    logger.debug(expr)
     res = mc.delete(
       collection_name=COLLECTION_NAME,
       filter=expr,
     )
+    logger.debug(res)
+    mc.flush(collection_name=COLLECTION_NAME)
     return len(res) > 0
   except Exception as e:
     logger.error(e)
@@ -115,12 +118,14 @@ async def modify(
 ) -> bool:
   try:
     expr = f"\"id\" == '{request_id}'"
+    logger.debug(expr)
     res = mc.query(
       collection_name=COLLECTION_NAME,
       filter=expr,
       output_fields=["*"],
       limit=1,
     )[0]
+    logger.debug(res)
     embedding_key = res["source"]
     embedding_key += res["context"] if not context else context
     if res["cleaned_chunk"] != "" or (cleaned_chunk and cleaned_chunk != ""):
