@@ -115,7 +115,7 @@ def name_expr(name: list[str]) -> str:
   for course_name in name:
     conditions.append(f'meta["course_name"] like "%{course_name}%"')
 
-  return f"( {' OR '.join(conditions)} )"
+  return f"( {' AND '.join(conditions)} )"
 
 
 def course_number_expr(course_number: list[str]) -> str:
