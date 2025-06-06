@@ -53,7 +53,7 @@ async def get_topk_results_by_query(
   query: str, sources: list[str], topk: int
 ) -> list[dict]:
   hr = HybridRetriever(mc, COLLECTION_NAME)
-  expr = " OR ".join([f"source == {source}" for source in sources])
+  expr = " OR ".join([f"source == '{source}'" for source in sources])
   config = SearchConfig(limit=topk * 2, offset=0, filter_expr=expr)
   result = await hr.retrieve(query, config)
   result = await run_in_threadpool(
