@@ -103,13 +103,12 @@ async def delete_knowledge_by_id(request_id: str) -> bool:
     logger.debug(expr)
     res = mc.query(
       collection_name=COLLECTION_NAME,
-      ids=[request_id],
+      filter=expr,
+      output_fields=["id"],
       offset=0,
-      limit=1,
     )[0]
     logger.debug(res)
-    res = [item for item in res if item["entity"]["source"] == "course"]
-    ids = [item["entity"]["id"] for item in res]
+    ids = [item["entity"]["id"] for item in res if item["entity"]["id"] == request_id]
     if len(ids) > 0:
       mc.delete(
         collection_name=COLLECTION_NAME,
@@ -129,7 +128,7 @@ async def modify(
     res = mc.query(
       collection_name=COLLECTION_NAME,
       output_fields=["*"],
-      ids=[request_id],
+      filter=f"\"id\" in ['{request_id}']",
       limit=1,
     )[0]
     logger.debug(res)
