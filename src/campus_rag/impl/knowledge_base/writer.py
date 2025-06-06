@@ -99,23 +99,22 @@ async def upload(
 
 async def delete_knowledge_by_id(request_id: str) -> bool:
   try:
-    expr = f"\"source\" != 'course'"
-    logger.debug(expr)
-    res = mc.query(
+    # expr = f"\"source\" != 'course'"
+    # logger.debug(expr)
+    # res = mc.query(
+    #   collection_name=COLLECTION_NAME,
+    #   filter=expr,
+    #   output_fields=["id"],
+    #   offset=0,
+    # )[0]
+    # logger.debug(res)
+    # ids = [item["entity"]["id"] for item in res if item["entity"]["id"] == request_id]
+    mc.delete(
       collection_name=COLLECTION_NAME,
-      filter=expr,
-      output_fields=["id"],
-      offset=0,
-    )[0]
-    logger.debug(res)
-    ids = [item["entity"]["id"] for item in res if item["entity"]["id"] == request_id]
-    if len(ids) > 0:
-      mc.delete(
-        collection_name=COLLECTION_NAME,
-        ids=ids,
-      )
+      ids=[request_id],
+    )
     mc.flush(collection_name=COLLECTION_NAME)
-    return len(ids) > 0
+    return True
   except Exception as e:
     logger.error(e)
     return False
@@ -129,6 +128,7 @@ async def modify(
       collection_name=COLLECTION_NAME,
       output_fields=["*"],
       filter=f"\"id\" in ['{request_id}']",
+      offset=0,
       limit=1,
     )[0]
     logger.debug(res)
