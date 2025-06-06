@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from typing import List
 from campus_rag.constants.prompt import SYSTEM_PROMPT
 from campus_rag.utils.llm import llm_chat_async, Message
+from campus_rag.utils.keyword_explain import get_keyword_explain
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,9 @@ async def reflect_query(query: str, context: List[str], system_prompt: Message) 
         
         ## User Question ##
         {query}
+        
+        ## Term explanation ##
+        {get_keyword_explain("./data/keywords.json")}
         
         ## Context Passages ##
         {context_text}

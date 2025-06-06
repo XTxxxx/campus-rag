@@ -10,7 +10,7 @@ def test_convstream():
   This is a simple test that runs the pipeline and prints the chunks.
   """
   pipeline = ChatPipeline()
-  query = "有哪些老师做NLP？"
+  query = "6+是谁？"
   history = []  # Assuming no previous messages for simplicity
 
   async def run_pipeline():

@@ -2,6 +2,7 @@ from campus_rag.constants.prompt import SYSTEM_PROMPT
 from campus_rag.utils.llm import llm_chat_astream
 from typing import AsyncGenerator
 from campus_rag.domain.rag.po import ChatMessage
+from campus_rag.utils.keyword_explain import get_keyword_explain
 
 _HistoryLength = 4096
 
@@ -43,6 +44,8 @@ async def generate_answer(
 根据下面的上下文内容，回答用户的问题，专注于当前问题即可，不用回答历史记录中的问题。
 ## Context ##
 {chunks}
+## Term explanation ##
+{get_keyword_explain("./data/keywords.json")}
 ## Query ##
 {query}
 """,
