@@ -41,7 +41,8 @@ async def generate_answer(
     "role": "user",
     "content": f"""
 ## Instruction ##
-根据下面的上下文内容，回答用户的问题，专注于当前问题即可，不用回答历史记录中的问题。
+根据下面的上下文内容以及关键词解释，回答用户的问题，专注于当前问题即可，不用回答历史记录中的问题。
+如果信息不足以回答问题，请直接说不知道。
 ## Context ##
 {chunks}
 ## Term explanation ##

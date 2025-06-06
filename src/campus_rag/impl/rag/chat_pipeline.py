@@ -156,26 +156,11 @@ class ChatPipeline:
     ):
       yield chunk
 
-    # REFLECTION STATUS
-    reflection_result = await reflect_query(
-      query, extracted_topk_results, SYSTEM_PROMPT
-    )
-
     async for chunk in _yield_wrapper(
-      f"Reflection result: {reflection_result}",
-      f"{STATUS_PREFIX} Reflecting done, generating answer specifically...\\n {reflection_result}\\n",
+      "Returning context...",
+      f"{STATUS_PREFIX} Collecting context... {results_text}",
     ):
       yield chunk
-
-    if reflection_result["category"] == ReflectionCategory.IRRELEVANT.value:
-      # Irrelevant question, use context free metainfo and remove the context
-      extracted_topk_results = []
-    else:
-      async for chunk in _yield_wrapper(
-        "Returning context...",
-        f"{STATUS_PREFIX} Catch context... {results_text}",
-      ):
-        yield chunk
 
     # Generate the answer
     async for chunk in _yield_wrapper(
