@@ -14,13 +14,11 @@ from fastapi.concurrency import run_in_threadpool
 import json
 from pathlib import Path
 
-current_dir = str(Path(__file__).parent.resolve())
-
 mc = MilvusClient(uri=MILVUS_URI)
 visible_fields = {
   COLLECTION_NAME: ["id", "source", "context", "chunk", "cleaned_chunk"],
 }
-SOURCE_DB = current_dir + "/data/source.json"
+SOURCE_DB = "./data/source.json"
 
 
 async def get_all_collection_names() -> list[str]:
