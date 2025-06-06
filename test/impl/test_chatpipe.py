@@ -3,6 +3,7 @@ from campus_rag.utils.logging_config import setup_logger
 
 logger = setup_logger()
 
+
 def test_convstream():
   """
   Test the conversation streaming functionality.

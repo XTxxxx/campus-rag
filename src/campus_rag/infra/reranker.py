@@ -8,7 +8,7 @@ from abc import abstractmethod
 from typing import List
 
 import requests
-from FlagEmbedding import FlagReranker, LayerWiseFlagLLMReranker #noqa
+from FlagEmbedding import FlagReranker, LayerWiseFlagLLMReranker  # noqa
 from sentence_transformers import CrossEncoder
 from campus_rag.utils.chunk_ops import construct_embedding_key
 

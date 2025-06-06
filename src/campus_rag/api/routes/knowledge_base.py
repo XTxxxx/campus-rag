@@ -5,7 +5,7 @@ from campus_rag.impl.knowledge_base.selector import (
   get_topk_results_by_query,
   get_collection_contents,
   get_all_collection_names,
-  get_all_sources
+  get_all_sources,
 )
 from campus_rag.domain.knowledge.po import (
   ContentsRequest,
@@ -13,10 +13,7 @@ from campus_rag.domain.knowledge.po import (
   UploadKnowledge,
   ModifyRequest,
 )
-from campus_rag.impl.knowledge_base.writer import (
-  upload,
-  modify
-)
+from campus_rag.impl.knowledge_base.writer import upload, modify
 from campus_rag.impl.user.user import get_current_admin_user
 
 router = APIRouter()
@@ -54,15 +51,12 @@ async def get_topk_knowledge_by_query_only(
   query: TopKQueryModel,
   user: User = Depends(get_current_admin_user),
 ) -> list[dict]:
-  return await get_topk_results_by_query(
-    query.query, query.sources, query.top_k
-  )
+  return await get_topk_results_by_query(query.query, query.sources, query.top_k)
 
 
 @router.post("/knowledge/upload")
 async def upload_knowledge(
-  knowledge: UploadKnowledge,
-  user: User = Depends(get_current_admin_user)
+  knowledge: UploadKnowledge, user: User = Depends(get_current_admin_user)
 ) -> bool:
   # now if uploading a new knowledge base, it will cover the existing one with the same name
   return await upload(
@@ -90,9 +84,6 @@ async def upload_knowledge(
 
 @router.post("/knowledge/modify")
 async def modify_chunk(
-  mr: ModifyRequest,
-  user: User = Depends(get_current_admin_user)
+  mr: ModifyRequest, user: User = Depends(get_current_admin_user)
 ) -> bool:
-  return await modify(
-    mr.request_id, mr.context, mr.chunk, mr.cleaned_chunk
-  )
+  return await modify(mr.request_id, mr.context, mr.chunk, mr.cleaned_chunk)

@@ -146,7 +146,9 @@ async def modify(
         "sparse_embedding": sparse_embeddings,
         "source": res["source"],
         "context": res["context"] if not context else context,
-        "cleaned_chunk": res["cleaned_chunk"] if (not cleaned_chunk or cleaned_chunk == "") else cleaned_chunk,
+        "cleaned_chunk": res["cleaned_chunk"]
+        if (not cleaned_chunk or cleaned_chunk == "")
+        else cleaned_chunk,
         "chunk": res["chunk"] if not chunk else chunk,
         "id": request_id,
       }

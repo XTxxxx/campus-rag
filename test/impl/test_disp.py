@@ -12,9 +12,7 @@ logger = setup_logger()
 
 
 def test_diy():
-  data_list = course_searcher.select_diy(
-    COLLECTION_NAME, None, ["meta"], limit=10000
-  )
+  data_list = course_searcher.select_diy(COLLECTION_NAME, None, ["meta"], limit=10000)
   types = set([data["meta"]["course_type"] for data in data_list])
   logger.info(types)
 
