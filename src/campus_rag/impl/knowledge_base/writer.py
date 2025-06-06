@@ -1,8 +1,10 @@
+import uuid
+
 from pymilvus import MilvusClient, DataType
 from campus_rag.constants.milvus import MILVUS_URI, COLLECTION_NAME
 from campus_rag.infra.embedding import sparse_embedding_model, embedding_model
 from campus_rag.utils.chunk_ops import construct_embedding_key
-import logging
+from campus_rag.utils.logging_config import setup_logger
 import json
 from pathlib import Path
 
@@ -11,6 +13,8 @@ current_dir = str(Path(__file__).parent.resolve())
 mc = MilvusClient(uri=MILVUS_URI)
 _MAX_LENGTH = 65535
 SOURCE_DB = current_dir + "/data/source.json"
+
+logger = setup_logger()
 
 
 async def _construct_embedding_key(
@@ -48,13 +52,15 @@ async def _create_collection(collection_name: str):
   mc.create_collection(
     collection_name=collection_name, schema=schema, index_params=index_params
   )
-  logging.log(f"Successfully created collection {collection_name}")
+  logger.log(f"Successfully created collection {collection_name}")
 
 
 async def upload(
   sources: list[str],
   knowledge: list[dict],
 ) -> bool:
+  if "course" in sources:
+    return False
   try:
     # await _create_collection(collection_name)
     insert_datas = []
@@ -77,7 +83,7 @@ async def upload(
           "context": " ".join(chunk["context"]),
           "cleaned_chunk": chunk["cleaned_chunk"],
           "chunk": chunk["chunk"],
-          "id": chunk["id"],
+          "id": uuid.uuid1(),
         }
       )
     mc.upsert(
@@ -88,37 +94,21 @@ async def upload(
     mc.flush(collection_name=COLLECTION_NAME)
     return True
   except Exception as e:
-    logging.error(e)
+    logger.error(e)
     return False
 
 
-# async def get_chunk_ids_by_collection_name(collection_name: str) -> list[int]:
-#   offset = 0
-#   res = []
-#   limit = 10
-#   while True:
-#     page = mc.query(
-#       collection_name=collection_name,
-#       filter="",
-#       output_fields=["id"],
-#       limit=limit,
-#       offset=offset,
-#     )
-#     offset += limit
-#     res.extend(page)
-#     if len(page) < limit:
-#       break
-#   return [str(item["id"]) for item in res]
-
-
-# async def get_chunk_by_id(collection_name: str, chunk_id: int) -> str:
-#   res = mc.query(
-#     collection_name=collection_name,
-#     filter=f"id == {chunk_id}",
-#     output_fields=["chunk"],
-#     limit=1,
-#   )[0]
-#   return res["chunk"]
+async def delete_knowledge_by_id(request_id: str) -> bool:
+  try:
+    expr = f"id == '{request_id}' AND source != 'course'"
+    res = mc.delete(
+      collection_name=COLLECTION_NAME,
+      filter=expr,
+    )
+    return res.delete_count > 0 if hasattr(res, "delete_count") else True
+  except Exception as e:
+    logger.error(e)
+    return False
 
 
 async def modify(
@@ -159,5 +149,5 @@ async def modify(
     )
     return True
   except Exception as e:
-    logging.error(e)
+    logger.error(e)
     return False
