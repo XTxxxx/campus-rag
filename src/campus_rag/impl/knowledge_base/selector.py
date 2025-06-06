@@ -53,7 +53,7 @@ async def get_topk_results_by_query(
   query: str, sources: list[str], topk: int
 ) -> list[dict]:
   hr = HybridRetriever(mc, COLLECTION_NAME)
-  expr = " OR ".join([f"source == {source}" for source in sources])
+  expr = " OR ".join([f"source == '{source}'" for source in sources])
   config = SearchConfig(limit=topk * 2, offset=0, filter_expr=expr)
   result = await hr.retrieve(query, config)
   result = await run_in_threadpool(
@@ -71,39 +71,3 @@ async def get_topk_results_by_query(
     for item in result
   ]
   return res
-
-
-# async def get_topk_results_by_query_and_filter(
-#   query: str, collection_name: str, topk: int, **kwargs
-# ) -> list[dict]:
-#   parent_key, inner_keys, values = None, None, None
-#   vis = visible_fields.get(collection_name, [])
-#   if "inner_keys" in kwargs:
-#     parent_key = "time_place"
-#     inner_keys, values = kwargs["inner_keys"], kwargs["values"]
-#     del kwargs["inner_keys"], kwargs["values"]
-#   search_params = {
-#     "metric_type": "IP",
-#     "params": {},
-#   }
-#   result = await filter_with_embedding_select(
-#     mc,
-#     collection_name,
-#     ["chunk", "meta"],
-#     _type="eq",
-#     query=query,
-#     search_params=search_params,
-#     parent_key=parent_key,
-#     inner_keys=inner_keys,
-#     values=values,
-#     limit=topk,
-#     **kwargs,
-#   )
-#   res = [
-#     {
-#       **{k: item[k] for k in vis},
-#       "distance": getattr(item, "distance", None),
-#     }
-#     for item in result
-#   ]
-#   return res
