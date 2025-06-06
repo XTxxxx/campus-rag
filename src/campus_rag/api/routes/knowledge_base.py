@@ -19,21 +19,21 @@ from campus_rag.impl.user.user import get_current_admin_user
 router = APIRouter()
 
 
-@router.get("/knowledge/all_name")
+@router.get("/knowledge/all_name", response_model=list[str])
 async def get_all_existing_knowledge_base_name(
   user: User = Depends(get_current_admin_user),
 ) -> list[str]:
   return await get_all_collection_names()  # we only op for chat
 
 
-@router.get("/knowledge/all_sources")
+@router.get("/knowledge/all_sources", response_model=list[str])
 async def get_all_existing_knowledge_base_sources(
   user: User = Depends(get_current_admin_user),
 ) -> list[str]:
   return await get_all_sources()
 
 
-@router.post("/knowledge/show_contents")
+@router.post("/knowledge/show_contents", response_model=list[dict])
 async def get_knowledge_base_contents_by_source(
   contents_request: ContentsRequest,
   user: User = Depends(get_current_admin_user),
@@ -46,7 +46,7 @@ async def get_knowledge_base_contents_by_source(
   )
 
 
-@router.post("/knowledge/query")
+@router.post("/knowledge/query", response_model=list[dict])
 async def get_topk_knowledge_by_query_only(
   query: TopKQueryModel,
   user: User = Depends(get_current_admin_user),
@@ -54,7 +54,7 @@ async def get_topk_knowledge_by_query_only(
   return await get_topk_results_by_query(query.query, query.sources, query.top_k)
 
 
-@router.post("/knowledge/upload")
+@router.post("/knowledge/upload", response_model=bool)
 async def upload_knowledge(
   knowledge: UploadKnowledge, user: User = Depends(get_current_admin_user)
 ) -> bool:
@@ -82,7 +82,7 @@ async def upload_knowledge(
 #   return await get_chunk_by_id(collection_name, chunk_id)
 
 
-@router.post("/knowledge/modify")
+@router.post("/knowledge/modify", response_model=bool)
 async def modify_chunk(
   mr: ModifyRequest, user: User = Depends(get_current_admin_user)
 ) -> bool:
