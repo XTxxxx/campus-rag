@@ -13,17 +13,10 @@ from campus_rag.domain.knowledge.po import (
   UploadKnowledge,
   ModifyRequest,
 )
-from campus_rag.impl.knowledge_base.writer import upload, modify
+from campus_rag.impl.knowledge_base.writer import upload, modify, delete_knowledge_by_id
 from campus_rag.impl.user.user import get_current_admin_user
 
 router = APIRouter()
-
-
-@router.get("/knowledge/all_name", response_model=list[str])
-async def get_all_existing_knowledge_base_name(
-  user: User = Depends(get_current_admin_user),
-) -> list[str]:
-  return await get_all_collection_names()  # we only op for chat
 
 
 @router.get("/knowledge/all_sources", response_model=list[str])
@@ -65,21 +58,9 @@ async def upload_knowledge(
   )
 
 
-# @router.get("/knowledge/chunk_ids")
-# async def get_chunk_ids(
-#   collection_name: str, user: User = Depends(get_current_admin_user)
-# ) -> list[int]:
-#   # return all available ids in Collection with collection_name
-#   # print(collection_name)
-#   return await get_chunk_ids_by_collection_name(collection_name)
-
-
-# @router.get("/knowledge/chunk_by_id")
-# async def get_chunk(
-#   collection_name: str, chunk_id: int, user: User = Depends(get_current_admin_user)
-# ) -> str:
-#   # get chunk content by chunk id
-#   return await get_chunk_by_id(collection_name, chunk_id)
+@router.delete("/knowledge/delete", response_model=bool)
+async def delete_knowledge(request_id: str):
+  return await delete_knowledge_by_id(request_id)
 
 
 @router.post("/knowledge/modify", response_model=bool)
