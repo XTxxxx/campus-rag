@@ -127,7 +127,7 @@ async def modify(
     res = mc.query(
       collection_name=COLLECTION_NAME,
       output_fields=["*"],
-      filter=f"\"id\" in ['{request_id}']",
+      filter=f"id in ['{request_id}']",
       offset=0,
       limit=1,
     )[0]
