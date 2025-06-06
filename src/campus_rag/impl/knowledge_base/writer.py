@@ -10,7 +10,7 @@ current_dir = str(Path(__file__).parent.resolve())
 
 mc = MilvusClient(uri=MILVUS_URI)
 _MAX_LENGTH = 65535
-SOURCE_DB = "data/source_list.json"
+SOURCE_DB = current_dir + "/data/source.json"
 
 
 async def _construct_embedding_key(

@@ -20,7 +20,7 @@ mc = MilvusClient(uri=MILVUS_URI)
 visible_fields = {
   COLLECTION_NAME: ["id", "source", "context", "chunk", "cleaned_chunk"],
 }
-SOURCE_DB = "data/source_list.json"
+SOURCE_DB = current_dir + "/data/source.json"
 
 
 async def get_all_collection_names() -> list[str]:

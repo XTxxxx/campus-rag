@@ -61,7 +61,8 @@ async def get_topk_knowledge_by_query_only(
 
 @router.post("/knowledge/upload")
 async def upload_knowledge(
-  knowledge: UploadKnowledge, user: User = Depends(get_current_admin_user)
+  knowledge: UploadKnowledge,
+  user: User = Depends(get_current_admin_user)
 ) -> bool:
   # now if uploading a new knowledge base, it will cover the existing one with the same name
   return await upload(
@@ -89,7 +90,8 @@ async def upload_knowledge(
 
 @router.post("/knowledge/modify")
 async def modify_chunk(
-  mr: ModifyRequest, user: User = Depends(get_current_admin_user)
+  mr: ModifyRequest,
+  user: User = Depends(get_current_admin_user)
 ) -> bool:
   return await modify(
     mr.request_id, mr.context, mr.chunk, mr.cleaned_chunk
