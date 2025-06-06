@@ -99,15 +99,24 @@ async def upload(
 
 async def delete_knowledge_by_id(request_id: str) -> bool:
   try:
-    expr = f"\"id\" == '{request_id}' AND \"source\" != 'course'"
+    expr = f"\"source\" != 'course'"
     logger.debug(expr)
-    res = mc.delete(
+    res = mc.query(
       collection_name=COLLECTION_NAME,
-      filter=expr,
-    )
+      ids=[request_id],
+      offset=0,
+      limit=1,
+    )[0]
     logger.debug(res)
+    res = [item for item in res if item["entity"]["source"] == "course"]
+    ids = [item["entity"]["id"] for item in res]
+    if len(ids) > 0:
+      mc.delete(
+        collection_name=COLLECTION_NAME,
+        ids=ids,
+      )
     mc.flush(collection_name=COLLECTION_NAME)
-    return len(res) > 0
+    return len(ids) > 0
   except Exception as e:
     logger.error(e)
     return False
@@ -117,12 +126,10 @@ async def modify(
   request_id: str, context: str = None, chunk: str = None, cleaned_chunk: str = None
 ) -> bool:
   try:
-    expr = f"\"id\" == '{request_id}'"
-    logger.debug(expr)
     res = mc.query(
       collection_name=COLLECTION_NAME,
-      filter=expr,
       output_fields=["*"],
+      ids=[request_id],
       limit=1,
     )[0]
     logger.debug(res)
