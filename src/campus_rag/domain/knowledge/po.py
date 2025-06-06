@@ -3,27 +3,25 @@ from pydantic import BaseModel
 
 
 class ContentsRequest(BaseModel):
-  collection_name: str
+  sources: list[str]
   page_id: int
   page_size: int
 
 
 class TopKQueryModel(BaseModel):
   query: str
-  collection_name: str
+  sources: list[str]
   top_k: int
 
 
 class UploadKnowledge(BaseModel):
   # user(admin) upload knowledge style
-  collection_name: str
+  sources: list[str]  # maybe a new source
   knowledge: list[dict[str, Any]]
-  chunk_keys: list[str]  # use which keys to build chunk
-  max_value_size: int  # a key-value when put in chunk, max value size will be used
-  meta_field: bool  # if create a meta field
 
 
-class ModifyChunk(BaseModel):
-  collection_name: str
-  chunk_id: int
-  chunk: str  # new chunk content
+class ModifyRequest(BaseModel):
+  request_id: str  # id in collection
+  context: str
+  chunk: str
+  cleaned_chunk: str

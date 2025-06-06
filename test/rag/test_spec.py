@@ -10,4 +10,3 @@ logger = setup_logger()
 
 
 app = typer.Typer()
-

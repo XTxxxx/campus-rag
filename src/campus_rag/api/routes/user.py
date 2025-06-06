@@ -18,7 +18,9 @@ async def register_user(user: UserCreate) -> User:
   return await user_impl.register_user(user)
 
 
-@router.post("/user/login/", response_model=LoginResponse, response_description="User's token")
+@router.post(
+  "/user/login/", response_model=LoginResponse, response_description="User's token"
+)
 async def login_user(form_data: OAuth2PasswordRequestForm = Depends()) -> User:
   return await user_impl.login_user(form_data)
 
