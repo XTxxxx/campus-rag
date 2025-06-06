@@ -8,11 +8,10 @@ from campus_rag.utils.logging_config import setup_logger
 import json
 from pathlib import Path
 
-current_dir = str(Path(__file__).parent.resolve())
 
 mc = MilvusClient(uri=MILVUS_URI)
 _MAX_LENGTH = 65535
-SOURCE_DB = current_dir + "/data/source.json"
+SOURCE_DB = "./data/source.json"
 
 logger = setup_logger()
 
@@ -80,10 +79,10 @@ async def upload(
           "embedding": embeddings,
           "sparse_embedding": sparse_embeddings,
           "source": chunk["source"],
-          "context": " ".join(chunk["context"]),
+          "context": " ".join(chunk["context"]) if isinstance(chunk["context"], list) else chunk["context"],
           "cleaned_chunk": chunk["cleaned_chunk"],
           "chunk": chunk["chunk"],
-          "id": uuid.uuid1(),
+          "id": str(uuid.uuid1()),
         }
       )
     mc.upsert(
@@ -100,12 +99,12 @@ async def upload(
 
 async def delete_knowledge_by_id(request_id: str) -> bool:
   try:
-    expr = f"id == '{request_id}' AND source != 'course'"
+    expr = f"\"id\" in ['{request_id}'] AND \"source\" != 'course'"
     res = mc.delete(
       collection_name=COLLECTION_NAME,
       filter=expr,
     )
-    return res.delete_count > 0 if hasattr(res, "delete_count") else True
+    return len(res) > 0
   except Exception as e:
     logger.error(e)
     return False
@@ -115,7 +114,7 @@ async def modify(
   request_id: str, context: str = None, chunk: str = None, cleaned_chunk: str = None
 ) -> bool:
   try:
-    expr = f"id == '{request_id}'"
+    expr = f"\"id\" == '{request_id}'"
     res = mc.query(
       collection_name=COLLECTION_NAME,
       filter=expr,
