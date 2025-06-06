@@ -260,5 +260,21 @@ def flat_weekday():
     json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+@app.command()
+def tag_freetime():
+  """
+  Tag courses that can be taken anytime.
+  """
+  with open(LIST_PATH, "r", encoding="utf-8") as f:
+    data = json.load(f)
+  for course in tqdm(data):
+    if "dows" not in course or course["dows"][0] == 0:
+      course["anytime"] = True
+    else:
+      course["anytime"] = False
+  with open(LIST_PATH, "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
+
+
 if __name__ == "__main__":
   app()

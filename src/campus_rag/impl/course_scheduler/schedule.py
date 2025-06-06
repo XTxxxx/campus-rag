@@ -91,6 +91,7 @@ async def generate_plan(
       PlanView: A generated course plan containing a description and selected courses.
   """
   keyword_explain_str = get_keyword_explain("./data/keywords_for_schedule.json")
+  course_splitter = "\n\n"
   prompt = [
     {
       "role": "system",
@@ -104,8 +105,8 @@ async def generate_plan(
 ##CONTEXT##
 {keyword_explain_str}
 ##COURSES##
-{"||".join(f"{i}: " + str(course) for i, course in enumerate(target_courses))}
-##CONSTRAINT##
+{course_splitter.join(f"{i}: " + str(course) for i, course in enumerate(target_courses))}
+##REQUIREMENT##
 {constraint}
 ##OUTPUT##
 你的输出是一个json数组，最外层数组中的每一个元素是一个选课计划，注意json中不能有注释。

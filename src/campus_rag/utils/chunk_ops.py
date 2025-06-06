@@ -79,6 +79,8 @@ def construct_meta_for_course(chunk: Chunk) -> dict:
   """
   Construct a metadata dictionary for the course chunk.
   """
+  comments = chunk.get("comments", "")
+  comment_str = "\n".join(comments) if isinstance(comments, list) else comments
   return {
     "course_name": chunk["course_name"],
     "course_number": chunk["course_number"],
@@ -96,4 +98,6 @@ def construct_meta_for_course(chunk: Chunk) -> dict:
     "grades": chunk.get("grades", []),
     "credit": chunk.get("credit", 0),
     "dows": chunk.get("dows", []),
+    "anytime": chunk.get("anytime", False),
+    "comments": comment_str if comment_str else None,
   }

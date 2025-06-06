@@ -71,7 +71,7 @@ class CourseView(BaseModel):
       campus=course["meta"]["campus"],
       time=time_list,
       description=construct_intro4disp(course["meta"]),
-      rednblack=None,
+      rednblack=course["meta"]["comments"] if "comments" in course["meta"] else None,
       distance=distance,
     )
 

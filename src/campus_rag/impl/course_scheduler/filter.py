@@ -252,7 +252,7 @@ def gen_filter_expr(filter: CourseFilter) -> str:
   # Combine all expressions with AND
   if exprs:
     exprs = "AND ".join(exprs)
-    return 'source == "course" AND' + exprs
+    return '((source == "course") AND (meta["anytime"] == false)) AND' + exprs
 
 
 filter_retriever = HybridRetriever(campus_rag_mc, COLLECTION_NAME)
