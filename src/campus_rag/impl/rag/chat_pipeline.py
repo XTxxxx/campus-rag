@@ -147,6 +147,7 @@ class ChatPipeline:
       extracted_topk_results[i] = f"{CONTEXT_PREFIX}{chunk}{CONTEXT_SUFFIX}"
     results_text = split_string.join(extracted_topk_results)
     results_text = results_text.replace("\n", "\\n")
+    results_text = results_text.replace("\r", "\\n")
     results_text = "\\n" + results_text + "\\n"
     logger.debug(f"Results text: {results_text}")
     async for chunk in _yield_wrapper(
