@@ -25,16 +25,14 @@ from campus_rag.constants.milvus import (
   INSERT_BATCH_SIZE,
 )
 from ..embedding import embedding_model, sparse_embedding_model
-
 import typer
 import os
 import json
-
 from pymilvus import DataType, MilvusClient
 from tqdm import tqdm
 
 app = typer.Typer()
-logger = setup_logger("info")
+logger = setup_logger(need_config=__name__ == "__main__")
 campus_rag_mc = MilvusClient(uri=MILVUS_URI)
 
 

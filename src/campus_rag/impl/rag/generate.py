@@ -40,7 +40,7 @@ async def generate_answer(
     "role": "user",
     "content": f"""
 ## Instruction ##
-Generate an answer according to the following context.
+根据下面的上下文内容，回答用户的问题，专注于当前问题即可，不用回答历史记录中的问题。
 ## Context ##
 {chunks}
 ## Query ##
