@@ -39,15 +39,36 @@ class ChatPipeline:
     self.reranker = reranker
     self.async_generator = generate_answer
     self.limit = 50
-    self.top_k = 10
+    self.top_k = 5
     self.test = test
     self.available_sources = ["course", "teacher", "manual"]
     self.search_strategy = {
-      0: {"global": 5},
-      1: {"global": 3, "local": 3},
-      2: {"global": 3, "local": 3},
-      3: {"global": 2, "local": 2},
+      "course": 5,
+      "teacher": 3,
+      "manual": 5,
+      "global": 2,
     }
+
+  async def minimal_start(self, query: str) -> AsyncGenerator:
+    """Initializes the chat pipeline by reflecting on the system prompt."""
+    search_config = SearchConfig(
+      sparse_weight=0.0,
+      dense_weight=1.0,
+      limit=self.top_k,
+      output_fields=["*"],
+      filter_expr=None,
+    )
+    results = await self.hybrid_retriever.retrieve(
+      question=query,
+      config=search_config,
+    )
+
+    if self.test:
+      yield TEST_PREFIX
+      yield [{"id": res["id"], "chunk": res["entity"]["chunk"]} for res in results]
+      return
+    # TODO: Implement minimal_start generate
+    pass
 
   async def start(self, query: str, history: list[ChatMessage]) -> AsyncGenerator:
     async def _yield_wrapper(log_info: str, yield_info: str):
@@ -85,10 +106,7 @@ class ChatPipeline:
       f"{STATUS_PREFIX} Routing done, target sources: {routed_sources}\\n",
     ):
       yield chunk
-    search_strategy = self.search_strategy.get(
-      len(routed_sources), {"global": 1, "local": 1}
-    )
-    logger.debug(f"Search strategy: {search_strategy}")
+    logger.debug(f"Search strategy: {self.search_strategy}")
 
     # RETRIEVAL STATUS
     all_results = []
@@ -117,7 +135,7 @@ class ChatPipeline:
         results=source_results,
       )
       source_topk = []
-      for result in source_reranked[: search_strategy["local"]]:
+      for result in source_reranked[: self.search_strategy[source]]:
         chunk_id = result.get("id")
         if chunk_id not in seen_chunk_ids:
           source_topk.append(result)
@@ -135,8 +153,14 @@ class ChatPipeline:
     ):
       yield chunk
     if self.test:
+      # Rerank all chunks
+      all_reranked = await run_in_threadpool(
+        self.reranker.rerank,
+        query=enhanced_query,
+        results=all_results,
+      )
       chunks = [
-        {"id": res["id"], "chunk": res["entity"]["chunk"]} for res in all_results
+        {"id": res["id"], "chunk": res["entity"]["chunk"]} for res in all_reranked
       ]
       test_result = f"{TEST_PREFIX} Test mode, returning chunk IDs: \\n"
       yield test_result

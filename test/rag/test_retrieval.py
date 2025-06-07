@@ -84,15 +84,16 @@ def eval(filename):
     top3_hit,
   ) = cal_statistic(test_data)
   logger.info(f"File: {filename}")
-  logger.info(f"  One Hit Rate: {hit_one_rate:.2f}")
-  logger.info(f"  All Hit Rate: {hit_all_rate:.2f}")
-  logger.info(f"  Top-1 hit rate: {top1_rate:.2f}")
-  logger.info(f"  Top-3 hit rate: {top3_rate:.2f}")
+  logger.info(f"  Recall @1: {hit_one_rate:.2f}")
+  logger.info(f"  Recall @all: {hit_all_rate:.2f}")
+  logger.info(f"  Precise @1: {top1_rate:.2f}")
+  logger.info(f"  Precise @3: {top3_rate:.2f}")
   return len(test_data), hit_one, hit_all, top1_hit, top3_hit
 
 
 async def retrieve(question: str, chat_pipeline: ChatPipeline) -> str:
-  ares_generator = chat_pipeline.start(question, [])
+  # ares_generator = chat_pipeline.start(question, [])
+  ares_generator = chat_pipeline.minimal_start(question)
   async for res in ares_generator:
     if TEST_PREFIX in res:
       chunks = await anext(ares_generator)
@@ -100,7 +101,7 @@ async def retrieve(question: str, chat_pipeline: ChatPipeline) -> str:
   return chunks
 
 
-async def calculate_actual_chunk(filename: str):
+async def calculate_actual_chunk(filename: str, output_suffix: str = ""):
   from campus_rag.impl.rag.chat_pipeline import ChatPipeline
 
   chat_pipeline = ChatPipeline(test=True)
@@ -112,11 +113,12 @@ async def calculate_actual_chunk(filename: str):
     chunks = await retrieve(question, chat_pipeline)
     item["actual_chunk"] = [chunk["id"] for chunk in chunks if "id" in chunk]
     logger.info(f"Question: {question}, Retrieved Chunks: {item['actual_chunk']}")
-  dump_json_file(os.path.join(test_output_root, filename), test_data)
+  dump_json_file(os.path.join(test_output_root, filename + output_suffix), test_data)
 
 
 @pytest.mark.asyncio
 async def test_driver():
+  output_suffix = "minimal"
   total_len = 0
   total_hit_one = 0
   total_hit_all = 0
@@ -124,8 +126,8 @@ async def test_driver():
   total_top3_hit = 0
 
   for filename in file_list:
-    # await calculate_actual_chunk(filename)
-    length, hit_one, hit_all, top1_hit, top3_hit = eval(filename)
+    await calculate_actual_chunk(filename, output_suffix=output_suffix)
+    length, hit_one, hit_all, top1_hit, top3_hit = eval(filename + output_suffix)
     total_len += length
     total_hit_one += hit_one
     total_hit_all += hit_all
@@ -133,10 +135,10 @@ async def test_driver():
     total_top3_hit += top3_hit
 
   logger.info(f"Total Questions: {total_len}")
-  logger.info(f"Total One Hit Rate: {total_hit_one / total_len:.2f}")
-  logger.info(f"Total All Hit Rate: {total_hit_all / total_len:.2f}")
-  logger.info(f"Total Top-1 Hit Rate: {total_top1_hit / total_len:.2f}")
-  logger.info(f"Total Top-3 Hit Rate: {total_top3_hit / total_len:.2f}")
+  logger.info(f"   Recall @1: {total_hit_one / total_len:.2f}")
+  logger.info(f"   Recall @all: {total_hit_all / total_len:.2f}")
+  logger.info(f"   Precise @1: {total_top1_hit / total_len:.2f}")
+  logger.info(f"   Precise @3: {total_top3_hit / total_len:.2f}")
 
 
 @pytest.mark.asyncio
@@ -145,6 +147,10 @@ async def test_diy():
   from campus_rag.impl.rag.chat_pipeline import ChatPipeline
 
   chat_pipeline = ChatPipeline(test=True)
-  questions = ["南京大学有哪些老师做NLP", "有没有事少分高的英语课？“"]
-  chunks = await retrieve(questions[1], chat_pipeline)
+  questions = [
+    "南京大学有哪些老师做NLP",
+    "有没有事少分高的英语课？",
+    "南京大学软件学院哪些老师从事人工智能方向的研究？",
+  ]
+  chunks = await retrieve(questions[2], chat_pipeline)
   logger.info(f"Retrieved Chunks: {chunks}")
