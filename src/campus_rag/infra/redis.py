@@ -1,5 +1,7 @@
 import redis
 
+from campus_rag.constants.redis import REDIS_PORT
+
 redis_client = redis.Redis(
-  host="localhost", port=6379, password="123456", decode_responses=True
+  host="localhost", port=REDIS_PORT, password="123456", decode_responses=True
 )
