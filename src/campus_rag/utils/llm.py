@@ -51,6 +51,8 @@ def llm_chat(prompts: Prompts) -> str:
   if cached_response:
     logging.info("LLM cache hit")
     return cached_response
+  else:
+    logging.debug("Calling remote llm")
 
   retries = 3
   tries = 0
@@ -82,6 +84,8 @@ async def llm_chat_async(prompts: Prompts) -> str:
   if cached_response:
     logging.info("LLM cache hit (async)")
     return cached_response
+  else:
+    logging.debug("Calling remote llm")
 
   retries = 3
   tries = 0
@@ -116,6 +120,8 @@ async def llm_chat_astream(prompts: Prompts) -> AsyncGenerator:
     logging.info("LLM cache hit (stream)")
     yield cached_response
     return
+  else:
+    logging.debug("Calling remote llm")
 
   retries = 3
   tries = 0
@@ -157,6 +163,8 @@ def structure_llm_chat(prompts, model: BaseModel):
     except Exception as e:
       logging.error(f"Failed to deserialize cached structured response: {e}")
       # Continue with the API call if deserialization fails
+  else:
+    logging.debug("Calling remote llm")
 
   llm_strcture = _llm_langchain.with_structured_output(model)
   retries = 3

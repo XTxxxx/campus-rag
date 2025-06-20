@@ -2,13 +2,6 @@
 ![欢迎界面截图](./assets/welcome.png)
 ## 项目概览
 
-- 集成的数据
-  - [x] 老师的相关信息
-  - [x] 红黑榜
-  - [x] 课表
-  - [x] 学生手册
-
-
 - **优点（项目组织方面）**
   - 使用 uv 进行项目管理 
   - 使用 docker 部署rag项目
@@ -18,34 +11,27 @@
 
 
 - **优点（功能方面）**
-  - 全面支持sse，rag pipeline实时推流
+  - sse + 消息队列，rag pipeline实时推流
   - rag pipeline易于裁切，调参优化
+  - 使用redis做缓存
+  - 支持知识库的管理，允许进行查询、以及实时的CRUD
 
-- 待改进的地方
-  - 支持多用户对话，持久化对话数据
-  - 丰富数据源，进一步清洗数据；优化检索策略；在线检索
+- **技术栈**
+  |功能|技术|
+  |-- | -|
+  |API| fastapi |
+  |数据模型校验| pydantic |
+  |数据持久化 （对话、用户相关）|sqlite |
+  |向量数据持久化 + 向量搜索|milvus |
+  |缓存| redis|
 
 
-## 开发者
+- **配置** 
+  - 通过环境变量的配置
+    - 主要是api_key
+  - 通过constants的配置，位于./campus_rag/constants目录下
+    - redis url, redis passwd等
+  - 其他配置
+    - docker.sh里面容器运行的代理配置
 
-- Develop (with uv)
-   - `uv sync --load`
-   - Run scripts with uv e.g.     `uv run python src/campus_rag/chunk/milvus_init.py`
-   - To start backend server, run `uv run uvicorn campus_rag.rag.api.main:app`
-   - Before commit, `uv run ruff format .`
-
-- Build
-  - `docker build -t whaledge-backend:latest .`
-
-- Deploy
-  ``` sh
-  docker run --name whaledge-backend -d  \
-  -v /home/xtx/.cache/huggingface:/root/.cache/huggingface   \
-  --network=host  \
-  -e QWEN_API_KEY=$QWEN_API_KEY  \
-  -e HTTP_PROXY = 'desensitized'
-  -e HTTPS_PROXY = 'desensitized'
-  --gpus all  \
-  --restart unless-stopped \
-  whaledge-backend:latest
-  ```
+- 数据处理脚本只保留了NJU课程爬取部分
