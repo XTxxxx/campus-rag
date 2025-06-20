@@ -1,6 +1,17 @@
-# Whaledge Copilot（迭代二）
-![欢迎界面截图](./assets/welcome.png)
+# Whaledge Copilot （后端仓库）
 ## 项目概览
+
+### 欢迎界面，对话
+![欢迎界面截图](./assets/welcome.png)
+
+### 向量数据库管理
+![向量数据库管理](./assets/vdb_manager.png)
+
+### 智能课表推荐与规划
+- 过滤器，支持结构化筛选和自然语言查询
+![课表规划过滤器](./assets/schedule_filter.png)
+- llm智能决策
+![课表规划结果](./assets/schedule_res.png)
 
 - **优点（项目组织方面）**
   - 使用 uv 进行项目管理 
